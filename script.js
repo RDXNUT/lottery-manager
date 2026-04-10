@@ -710,7 +710,7 @@ function runAnalysis() {
             html += `
                 <div class="report-card winner-item" style="border-left: 5px solid ${w.winType.includes('โต๊ด') ? '#3498db' : '#f1c40f'}">
                     <div class="person-row">
-                        <span><b>${w.name}</b> (${w.winType}: ${w.number})</span>
+                        <span><b>${w.name}</b> (${w.winType}: ${w.number}) <span style="color:#777; font-size:1.1rem;">(แทง ${w.amount.toLocaleString()}.-)</span></span>
                         <span class="text-profit">ถูก ${w.winAmount.toLocaleString()}.-</span>
                     </div>
                     <button onclick="togglePaymentStatus('${w.name}')" 
