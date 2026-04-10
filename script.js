@@ -38,30 +38,29 @@ function initApp() {
         const badge = document.querySelector('.demo-badge');
         const loginBtn = document.getElementById('login-nav-btn');
 
-        // ทุกครั้งที่สถานะเปลี่ยน (ล็อกอินหรือสลับบัญชี) ให้ล้างค่าในหน้าจอก่อน
-        installments = []; 
-        renderInstallments();
-
         if (user) {
+            // --- กรณีมีผู้ใช้ล็อกอิน (หรือรีเฟรชหน้าจอแล้วยังล็อกอินอยู่) ---
             currentUser = user;
             loginBtn.innerText = user.displayName;
             loginBtn.onclick = () => askLogout(); 
             badge.innerText = "☁️ คลาวด์ซิงค์";
             badge.style.color = "#2ecc71";
             
-            // โหลดข้อมูลใหม่ของบัญชีนี้เท่านั้น
-            isCloudDataLoaded = false; // บล็อกการเซฟจนกว่าจะโหลดเสร็จ
+            isCloudDataLoaded = false; // บล็อกการเซฟชั่วคราวระหว่างรอโหลดจาก Cloud
             await loadDataFromCloud();
         } else {
+            // --- กรณีไม่ได้ล็อกอิน หรือเพิ่งสั่ง Logout ---
             currentUser = null;
-            isCloudDataLoaded = true; 
+            isCloudDataLoaded = true; // ให้เซฟลงเครื่องได้ตามปกติ
             loginBtn.innerText = "เข้าสู่ระบบ";
             loginBtn.onclick = () => openLoginModal(); 
 
             badge.innerText = "โหมดทดลองใช้";
             badge.style.color = "rgba(255,255,255,0.7)";
-            // ดึงข้อมูล LocalStorage (ถ้ามี) สำหรับคนไม่ล็อกอิน
-            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+            
+            // ดึงข้อมูลจากเครื่องมาแสดง
+            const localData = localStorage.getItem('data_v1');
+            installments = localData ? JSON.parse(localData) : [];
             renderInstallments();
         }
     });
@@ -108,31 +107,40 @@ async function loadDataFromCloud() {
         
         if (snapshot.exists()) {
             const data = snapshot.val().installments;
-            // ดึงข้อมูลของบัญชีนี้มาใส่
+            // ดึงข้อมูลจาก Cloud มาใส่ในตัวแปรหลัก
             installments = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-            console.log("✅ โหลดข้อมูลของบัญชี:", currentUser.displayName);
+            console.log("✅ โหลดข้อมูลจาก Cloud สำเร็จ");
         } else {
-            // บัญชีใหม่แกะกล่อง ไม่มีข้อมูลใน Cloud
-            console.log("🆕 บัญชีใหม่: เริ่มต้นจากศูนย์");
-            installments = []; // บังคับให้เป็นว่างเปล่า
-            localStorage.removeItem('data_v1'); // ล้างของเก่าที่อาจค้างจากคนอื่น
+            // ถ้าบัญชีนี้ไม่มีข้อมูลใน Cloud จริงๆ ให้เริ่มที่ว่างเปล่า
+            console.log("🆕 บัญชีใหม่: ไม่มีข้อมูลใน Cloud");
+            installments = [];
         }
         
-        isCloudDataLoaded = true; 
-        renderInstallments();
+        isCloudDataLoaded = true; // ปลดล็อกให้สามารถเซฟข้อมูลได้
+        renderInstallments();    // วาดหน้าจอ
+        
+        // เซฟลง LocalStorage สำรองไว้ด้วยเพื่อให้รีเฟรชครั้งหน้าเร็วขึ้น
+        localStorage.setItem('data_v1', JSON.stringify(installments));
+        
     } catch (error) {
-        console.error("❌ Load Error", error);
+        console.error("❌ Load Error:", error);
         isCloudDataLoaded = true;
     }
 }
+
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
 async function saveData() {
-    // 1. บันทึกลงเครื่อง (LocalStorage) กันเหนียวไว้ก่อน
-    localStorage.setItem('data_v1', JSON.stringify(installments));
-    console.log("💾 บันทึกลงเครื่องแล้ว");
+    // 1. ถ้ายังโหลดข้อมูลจาก Cloud ไม่เสร็จ ห้ามเซฟทับเด็ดขาด!
+    if (!isCloudDataLoaded) {
+        console.log("⚠️ รอก่อน... ระบบกำลังโหลดข้อมูล ห้ามเซฟทับ");
+        return;
+    }
 
-    // 2. ถ้าล็อกอินอยู่ และระบบพร้อมซิงค์ ให้ส่งขึ้น Firebase ทันที
-    if (currentUser && isCloudDataLoaded) {
+    // 2. เซฟลงเครื่องเสมอ
+    localStorage.setItem('data_v1', JSON.stringify(installments));
+
+    // 3. ถ้าล็อกอินอยู่ ให้ส่งขึ้น Cloud
+    if (currentUser) {
         try {
             const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
             await window.fbMethods.set(userRef, { 
@@ -140,9 +148,9 @@ async function saveData() {
                 lastUpdate: Date.now(),
                 userName: currentUser.displayName
             });
-            console.log("☁️ ซิงค์ข้อมูลขึ้น Cloud เรียบร้อย");
+            console.log("☁️ ซิงค์ Cloud สำเร็จ");
         } catch (e) {
-            console.error("☁️ Cloud Sync Error:", e);
+            console.error("☁️ Sync Error:", e);
         }
     }
 }
