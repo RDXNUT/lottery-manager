@@ -25,6 +25,47 @@ function initAuth() {
     }
 }
 setTimeout(initAuth, 1000); // หน่วงเวลาเล็กน้อยเพื่อให้ Firebase พร้อมใช้งาน
+
+// --- ระบบตรวจสอบ Firebase และสถานะการล็อกอิน ---
+function startApp() {
+    if (window.fbMethods && window.fbAuth) {
+        console.log("✅ ระบบ Firebase เชื่อมต่อสำเร็จ");
+        
+        window.fbMethods.onAuthStateChanged(window.fbAuth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-nav-btn').innerText = user.displayName;
+                const badge = document.querySelector('.demo-badge');
+                badge.innerText = "☁️ คลาวด์ซิงค์";
+                badge.style.color = "#2ecc71";
+                loadDataFromCloud();
+            } else {
+                currentUser = null;
+                document.getElementById('login-nav-btn').innerText = "เข้าสู่ระบบ";
+                const badge = document.querySelector('.demo-badge');
+                badge.innerText = "โหมดทดลองใช้";
+                badge.style.color = "rgba(255,255,255,0.7)";
+                renderInstallments();
+            }
+        });
+    } else {
+        setTimeout(startApp, 100); // วนเช็คจนกว่า Firebase จะโหลดเสร็จ
+    }
+}
+startApp();
+
+// --- ฟังก์ชันล็อกอิน Google (ตัวจริง) ---
+async function handleGoogleLogin() {
+    try {
+        if (!window.fbMethods) return;
+        await window.fbMethods.signInWithPopup(window.fbAuth, window.fbProvider);
+        closeLoginModal();
+    } catch (error) {
+        console.error("Login Error:", error);
+        showAlert("เข้าสู่ระบบไม่สำเร็จ หรือคุณปิดหน้าต่างล็อกอิน");
+    }
+}
+
 // --- ฟังก์ชันจัดการ Modal (รวมชุดเดียว) ---
 window.openLoginModal = function() { document.getElementById('login-modal').style.display = 'block'; }
 window.closeLoginModal = function() { document.getElementById('login-modal').style.display = 'none'; }
@@ -52,18 +93,6 @@ window.fbMethods.onAuthStateChanged(window.fbAuth, (user) => {
         renderInstallments();
     }
 });
-
-// 2. ฟังก์ชันล็อกอิน Google
-async function handleGoogleLogin() {
-    try {
-        if (!window.fbMethods) throw new Error("Firebase ยังไม่โหลด");
-        await window.fbMethods.signInWithPopup(window.fbAuth, window.fbProvider);
-        closeLoginModal();
-    } catch (error) {
-        console.error("Login Error:", error);
-        showAlert("เข้าสู่ระบบไม่สำเร็จ หรือรอระบบโหลดสักครู่");
-    }
-}
 
 // ฟังก์ชันบันทึกข้อมูล
 async function saveData() {
@@ -408,6 +437,9 @@ function showAlert(msg) {
 }
 // ผูกฟังก์ชันเข้ากับ Window เพื่อให้ HTML เรียกใช้งานผ่าน onclick ได้ชัวร์ๆ
 window.handleGoogleLogin = handleGoogleLogin;
+window.openLoginModal = () => document.getElementById('login-modal').style.display = 'block';
+window.closeLoginModal = () => document.getElementById('login-modal').style.display = 'none';
+window.closeAlert = () => document.getElementById('alert-modal').style.display = 'none';
 window.renderInstallments = renderInstallments;
 window.createNewInstallment = function() {
     document.getElementById('add-installment-modal').style.display = 'block';
@@ -675,12 +707,6 @@ function closeLoginModal() {
     document.getElementById('login-modal').style.display = 'none';
 }
 
-// ฟังก์ชันสำหรับเชื่อมต่อ Firebase (ทำปุ่มรอไว้ก่อน)
-function handleGoogleLogin() {
-    console.log("กำลังเชื่อมต่อกับ Firebase Google Auth...");
-    // หลังจากนี้ค่อยเอาโค้ด Firebase Auth มาใส่ตรงนี้
-    showAlert("ระบบล็อกอินจะเปิดใช้งานเร็วๆ นี้ (Firebase Setup Required)");
-}
 
 // แก้ไขฟังก์ชัน window.onclick เดิมเพื่อให้ปิด Login Modal ได้ด้วย
 window.onclick = function(event) {

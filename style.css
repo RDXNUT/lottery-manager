@@ -319,13 +319,14 @@ input:focus { border-color: var(--light-blue); outline: none; }
 
 .modern-modal {
     background: white;
-    margin: 10% auto;
-    width: 90%;
+    margin: 5% auto;
+    width: 95%;
     max-width: 450px;
     border-radius: 25px;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    margin: 20% auto;
+    top: 50%; 
+    transform: translateY(-50%);
 }
 .modal-shadow {
     box-shadow: 0 15px 30px rgba(0,0,0,0.5);
@@ -583,7 +584,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
         grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
-    .modern-modal { width: 400px; margin: 10% auto; }
+    .modern-modal { width: 400px; margin: 0 auto; }
     .input-card {
         padding: 30px;
     }
