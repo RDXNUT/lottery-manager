@@ -252,6 +252,24 @@
         </div>
     </div>
 
+    <!-- Modal ยืนยันการออกจากระบบ -->
+    <div id="logout-confirm-modal" class="modal">
+        <div class="modal-content modal-shadow modern-modal" style="max-width: 380px;">
+            <div class="modal-header" style="background: var(--navy);">
+                <h2>ออกจากระบบ</h2>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px 20px;">
+                <p id="logout-message" style="font-size: 1.1rem; margin-bottom: 25px; color: #333; line-height: 1.5;"></p>
+                
+                <div class="modal-actions-container">
+                    <!-- ใช้สีแดงแบบปุ่มลบเพื่อให้ดูเด่น -->
+                    <button class="btn-confirm-delete-modern" onclick="executeLogout()">ออกจากระบบ</button>
+                    <button class="btn-cancel-modern" onclick="closeLogoutModal()">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <!-- Firebase Realtime Database SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";

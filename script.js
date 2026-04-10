@@ -41,17 +41,26 @@ function initApp() {
 }
 initApp();
 
+// 1. เปลี่ยนฟังก์ชันถามออกจากระบบเดิม
 function askLogout() {
-    // ใช้ confirm ง่ายๆ หรือจะสร้าง Modal สวยๆ ก็ได้
-    if (confirm(`คุณต้องการออกจากระบบ (บัญชี: ${currentUser.displayName}) ใช่หรือไม่?`)) {
-        window.fbMethods.signOut(window.fbAuth).then(() => {
-            console.log("Logged Out");
-            // ข้อมูลจะถูกดึงจาก LocalStorage อัตโนมัติโดย onAuthStateChanged
-        });
-    }
+    const msg = `คุณต้องการออกจากระบบ\n(บัญชี: ${currentUser.displayName})\nใช่หรือไม่?`;
+    document.getElementById('logout-message').innerText = msg;
+    document.getElementById('logout-confirm-modal').style.display = 'flex'; // เปิดป๊อปอัพ
 }
 
-// --- 2. ฟังก์ชันโหลดข้อมูลจาก Cloud ---
+// 2. ฟังก์ชันสั่งออกจากระบบจริงๆ (เรียกใช้เมื่อกดปุ่มในป๊อปอัพ)
+window.executeLogout = function() {
+    window.fbMethods.signOut(window.fbAuth).then(() => {
+        console.log("Logged Out");
+        closeLogoutModal();
+    });
+}
+// 3. ฟังก์ชันปิดป๊อปอัพออกจากระบบ
+window.closeLogoutModal = function() {
+    document.getElementById('logout-confirm-modal').style.display = 'none';
+}
+
+// ฟังก์ชันโหลดข้อมูลจาก Cloud ---
 async function loadDataFromCloud() {
     if (!currentUser) return;
     const dbRef = window.fbMethods.ref(window.fbDb);
@@ -752,14 +761,20 @@ function closeLoginModal() {
 // แก้ไขฟังก์ชัน window.onclick เดิมเพื่อให้ปิด Login Modal ได้ด้วย
 window.onclick = function(event) {
     const loginModal = document.getElementById('login-modal');
-    const customerModal = document.getElementById('customer-modal');
+    const custModal = document.getElementById('customer-modal');
     const detailModal = document.getElementById('detail-modal');
     const addModal = document.getElementById('add-installment-modal');
-    
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    const alertModal = document.getElementById('alert-modal');
+    const logoutModal = document.getElementById('logout-confirm-modal'); // เพิ่มบรรทัดนี้
+
     if (event.target == loginModal) closeLoginModal();
-    if (event.target == customerModal) closeCustomerModal();
+    if (event.target == custModal) closeCustomerModal();
     if (event.target == detailModal) closeDetailModal();
     if (event.target == addModal) closeAddModal();
+    if (event.target == deleteModal) closeDeleteModal();
+    if (event.target == alertModal) closeAlert();
+    if (event.target == logoutModal) closeLogoutModal(); // เพิ่มบรรทัดนี้
 }
 // --- ส่วนจัดการหน้าต่าง Login Modal ---
 
