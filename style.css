@@ -568,17 +568,11 @@ input:focus { border-color: var(--light-blue); outline: none; }
 @media (min-width: 481px) and (max-width: 1024px) {
     .container { width: 92%; }
     .grid-container { grid-template-columns: 1fr 1fr; } /* โชว์การ์ดงวด 2 คอลัมน์ */
-    
     #view-title { font-size: 1.3rem; }
     .btn-header-list { min-width: 90px !important; }
-
     .modern-modal { max-width: 450px; }
-    
-    /* ปรับปรุงหน้าสรุปยอดให้ดูง่ายขึ้นในไอแพด */
     #report-content {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
+        display: block;
     }
     #search-box-wrap, .profit-summary-grid { grid-column: span 2; }
 }
@@ -754,11 +748,15 @@ input:focus { border-color: var(--light-blue); outline: none; }
         max-width: 450px;
     }
     #report-content {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
+        display: block; 
+        max-width: 800px; /* จำกัดความกว้างไม่ให้แผ่เต็มจอเกินไปในคอม จะได้อ่านง่าย */
+        margin: 0 auto;   /* จัดให้อยู่กึ่งกลางหน้าจอ */
     }
-    #search-box-wrap, .profit-summary-grid, #profit-analysis-controls { grid-column: span 2; }
+     #search-box-wrap, .profit-summary-grid, #profit-analysis-controls {
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
 }
 
 
@@ -1018,4 +1016,28 @@ input:focus { border-color: var(--light-blue); outline: none; }
 .google-btn:hover {
     background: #f8f8f8;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+/* ปรับแต่งการ์ดผู้ชนะให้ดูง่ายในแบบเรียงเดี่ยว */
+.winner-item {
+    border-left: 8px solid #f1c40f; /* แถบสีทองหนาขึ้น */
+    background: #fffdf2; /* พื้นหลังสีเหลืองจางๆ ให้รู้ว่าถูกรางวัล */
+    margin-bottom: 12px;
+    padding: 18px 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(241, 196, 15, 0.1);
+    display: block; /* บังคับเรียงแถวเดี่ยว */
+    width: 100%;
+}
+
+.winner-item .person-row {
+    align-items: center; /* จัดชื่อและยอดเงินให้อยู่กึ่งกลางแนวเดียวกัน */
+}
+
+/* เพิ่มเส้นคั่นระหว่างหมวดเลขให้ชัดเจน */
+#report-content h4 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    padding-left: 10px;
+    border-left: 4px solid var(--navy);
+    color: var(--navy);
 }
