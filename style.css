@@ -53,6 +53,7 @@ header {
     width: 95%;
     max-width: 1000px; 
     margin: 20px auto;
+    padding: 0 10px
 }
 
 /* --- 3. HEADER BUTTONS (ปุ่ม รายชื่อ/สรุปยอด) --- */
@@ -103,8 +104,8 @@ header {
 /* --- 4. DASHBOARD & CARDS --- */
 .grid-container {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* ปรับจำนวนคอลัมน์อัตโนมัติ */
+    gap: 20px;
 }
 .inst-card {
     background: white;
@@ -324,6 +325,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
     border-radius: 25px;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    margin: 20% auto;
 }
 .modal-shadow {
     box-shadow: 0 15px 30px rgba(0,0,0,0.5);
@@ -507,20 +509,26 @@ input:focus { border-color: var(--light-blue); outline: none; }
     /* มือถือ */
     .container { padding: 10px; }
     header h1 { font-size: 1.2rem; }
+    .btn-header-list {
+        padding: 10px 20px !important;
+        font-size: 1rem !important;
+        height: 45px !important;
+        min-width: 100px !important;
+    }
     .big-input { font-size: 1.8rem !important; }
     .inst-card h3 { font-size: 1.2rem; }
     .btn-save { font-size: 1.4rem; }
+    .btn-login-outline { padding: 4px 8px; font-size: 0.8rem; }
+    .big-input { font-size: 1.8rem !important; }
     .modal-body div[style*="display: flex"] {
         flex-direction: column; /* มือถือให้เรียงลงมา */
         gap: 0 !important;
     }
     .num-title { font-size: 1.3rem; }
     .tab-btn { font-size: 0.85rem; }
-    .btn-header-list {
-        padding: 10px 20px !important;
-        font-size: 1rem !important;
-        height: 45px !important;
-        min-width: 100px !important;
+    .header-container {
+        flex-direction: row; /* ให้หัวข้อยังอยู่แถวเดียวกันแต่ย่อขนาด */
+        padding: 10px;
     }
     .header-container h1 {
         font-size: 1.4rem !important; /* ย่อชื่อวันที่ลงนิหนึ่งเพื่อให้ปุ่มไม่เบียดกัน */
@@ -551,6 +559,10 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .demo-badge { display: none; } /* ซ่อนคำว่าโหมดทดลองในมือถือเพื่อประหยัดพื้นที่ */
     .btn-login-outline { font-size: 0.8rem; padding: 4px 10px; }
     .header-action-group { gap: 8px; }
+    .grid-container {
+        grid-template-columns: 1fr; /* แถวเดียวเต็มจอ */
+    }
+    #view-title { font-size: 1.1rem; }
 }
 
 /* แท็บเล็ต / iPad */
@@ -561,13 +573,17 @@ input:focus { border-color: var(--light-blue); outline: none; }
         font-size: 0.95rem !important; 
         height: 40px !important;
     }
+    .grid-container {
+        grid-template-columns: 1fr 1fr; /* สองคอลัมน์ */
+    }
+    .container { width: 90%; }
 }
 @media (min-width: 768px) {
     #installment-list {
         grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
-    
+    .modern-modal { width: 400px; margin: 10% auto; }
     .input-card {
         padding: 30px;
     }
@@ -593,6 +609,9 @@ input:focus { border-color: var(--light-blue); outline: none; }
         background: white !important;
         color: var(--dark-blue) !important;
         transform: translateY(-2px);
+    }
+    .grid-container {
+        grid-template-columns: 1fr 1fr 1fr; /* สามคอลัมน์ */
     }
 }
 

@@ -1,4 +1,38 @@
 let currentUser = null;
+let installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+let currentInstallmentId = null;
+let currentDigitLimit = 2;
+
+// ตรวจสอบสถานะการล็อกอิน
+function initAuth() {
+    if (window.fbMethods) {
+        window.fbMethods.onAuthStateChanged(window.fbAuth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-nav-btn').innerText = user.displayName;
+                document.querySelector('.demo-badge').innerText = "☁️ คลาวด์ซิงค์";
+                document.querySelector('.demo-badge').style.color = "#2ecc71";
+                loadDataFromCloud();
+            } else {
+                currentUser = null;
+                document.getElementById('login-nav-btn').innerText = "เข้าสู่ระบบ";
+                document.querySelector('.demo-badge').innerText = "โหมดทดลองใช้";
+                document.querySelector('.demo-badge').style.color = "rgba(255,255,255,0.7)";
+                installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+                renderInstallments();
+            }
+        });
+    }
+}
+setTimeout(initAuth, 1000); // หน่วงเวลาเล็กน้อยเพื่อให้ Firebase พร้อมใช้งาน
+// --- ฟังก์ชันจัดการ Modal (รวมชุดเดียว) ---
+window.openLoginModal = function() { document.getElementById('login-modal').style.display = 'block'; }
+window.closeLoginModal = function() { document.getElementById('login-modal').style.display = 'none'; }
+window.closeAddModal = function() { document.getElementById('add-installment-modal').style.display = 'none'; }
+window.closeCustomerModal = function() { document.getElementById('customer-modal').style.display = 'none'; }
+window.closeDetailModal = function() { document.getElementById('detail-modal').style.display = 'none'; }
+window.closeAlert = function() { document.getElementById('alert-modal').style.display = 'none'; }
+window.closeDeleteModal = function() { document.getElementById('delete-confirm-modal').style.display = 'none'; }
 
 // 1. ตรวจสอบสถานะการล็อกอินอัตโนมัติเมื่อเปิดแอป
 window.fbMethods.onAuthStateChanged(window.fbAuth, (user) => {
@@ -22,34 +56,32 @@ window.fbMethods.onAuthStateChanged(window.fbAuth, (user) => {
 // 2. ฟังก์ชันล็อกอิน Google
 async function handleGoogleLogin() {
     try {
+        if (!window.fbMethods) throw new Error("Firebase ยังไม่โหลด");
         await window.fbMethods.signInWithPopup(window.fbAuth, window.fbProvider);
         closeLoginModal();
     } catch (error) {
         console.error("Login Error:", error);
-        showAlert("เข้าสู่ระบบไม่สำเร็จ");
+        showAlert("เข้าสู่ระบบไม่สำเร็จ หรือรอระบบโหลดสักครู่");
     }
 }
 
 // ฟังก์ชันบันทึกข้อมูล
 async function saveData() {
     localStorage.setItem('data_v1', JSON.stringify(installments));
-    
-    if (currentUser) {
+    if (currentUser && window.fbMethods) {
         try {
             const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
             await window.fbMethods.set(userRef, { 
                 installments: installments,
                 lastUpdate: Date.now()
             });
-        } catch (e) {
-            console.error("Cloud Sync Error: ", e);
-        }
+        } catch (e) { console.error("Cloud Sync Error: ", e); }
     }
 }
 
 // ฟังก์ชันโหลดข้อมูล
 async function loadDataFromCloud() {
-    if (!currentUser) return;
+    if (!currentUser || !window.fbMethods) return;
     const dbRef = window.fbMethods.ref(window.fbDb);
     try {
         const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}`));
@@ -57,19 +89,11 @@ async function loadDataFromCloud() {
             installments = snapshot.val().installments || [];
             renderInstallments();
         }
-    } catch (error) {
-        console.error("Load Error: ", error);
-    }
+    } catch (error) { console.error("Load Error: ", error); }
 }
-
-// ข้อมูลสมมติและการจัดการ State
-let installments = JSON.parse(localStorage.getItem('data_v1')) || [];
-let currentInstallmentId = null;
 
 document.getElementById('user-list-btn').style.display = 'none';
 document.getElementById('report-btn').style.display = 'none';
-
-let currentDigitLimit = 2;
 const MAX_INSTALLMENT_LIMIT = 100000;
 const MAX_PERSON_LIMIT = 5000;
 
@@ -382,6 +406,22 @@ function showAlert(msg) {
     document.getElementById('alert-message').innerText = msg;
     document.getElementById('alert-modal').style.display = 'block';
 }
+// ผูกฟังก์ชันเข้ากับ Window เพื่อให้ HTML เรียกใช้งานผ่าน onclick ได้ชัวร์ๆ
+window.handleGoogleLogin = handleGoogleLogin;
+window.renderInstallments = renderInstallments;
+window.createNewInstallment = function() {
+    document.getElementById('add-installment-modal').style.display = 'block';
+    document.getElementById('new-inst-date').value = '';
+    document.getElementById('new-inst-date').focus();
+};
+window.confirmCreateInstallment = function() {
+    const dateInput = document.getElementById('new-inst-date');
+    const dateStr = dateInput.value;
+    const maxTotal = parseFloat(document.getElementById('new-inst-max-total').value) || 100000;
+    if(!dateStr) { showAlert("กรุณาระบุวันที่"); return; }
+    installments.push({ id: Date.now(), date: dateStr, total: 0, maxTotal: maxTotal, entries: [], paidList: {} });
+    saveData(); renderInstallments(); closeAddModal();
+};
 
 // ฟังก์ชันปิด Alert 
 function closeAlert() {
