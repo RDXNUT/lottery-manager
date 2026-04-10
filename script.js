@@ -45,11 +45,11 @@ function initApp() {
             badge.innerText = "☁️ คลาวด์ซิงค์";
             badge.style.color = "#2ecc71";
             
-            // สำคัญ: โหลดข้อมูลใหม่จาก Cloud ทุกครั้งที่ล็อกอินหรือเปลี่ยนเครื่อง
+            // เมื่อล็อกอิน หรือ รีเฟรชหน้าจอ ให้โหลดข้อมูลจาก Cloud ทันที
             await loadDataFromCloud();
         } else {
             currentUser = null;
-            isCloudDataLoaded = false;
+            isCloudDataLoaded = true; // ถ้าไม่ได้ล็อกอิน ให้ยอมให้เซฟลงเครื่องได้เลย
             loginBtn.innerText = "เข้าสู่ระบบ";
             loginBtn.onclick = () => openLoginModal(); 
 
@@ -90,34 +90,42 @@ async function loadDataFromCloud() {
         const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}`));
         if (snapshot.exists()) {
             const data = snapshot.val().installments;
-            // ตรวจสอบว่าข้อมูลที่ได้เป็น Array หรือไม่
             installments = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-            console.log("✅ ข้อมูลจาก Cloud โหลดเรียบร้อย");
+            console.log("✅ โหลดข้อมูลจาก Cloud สำเร็จ");
+        } else {
+            // ถ้าใน Cloud ว่างเปล่า แต่ในเครื่องมีข้อมูล ให้ใช้ข้อมูลในเครื่องไปก่อน
+            console.log("ℹ️ ไม่พบข้อมูลใน Cloud, ใช้ข้อมูลจาก LocalStorage");
+            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+            // และสั่งเซฟขึ้น Cloud ทันทีเพื่อให้ข้อมูลเริ่มต้นซิงค์
+            isCloudDataLoaded = true;
+            await saveData();
         }
         
-        isCloudDataLoaded = true; // ยืนยันว่าโหลดจาก Cloud สำเร็จแล้ว
-        renderInstallments();    // วาดหน้าจอทันที
+        isCloudDataLoaded = true; 
+        renderInstallments();
     } catch (error) {
-        console.error("Load Error", error);
+        console.error("❌ Load Error", error);
+        isCloudDataLoaded = true; // ป้องกันแอปค้างเพื่อให้ยังใช้งานต่อได้
     }
 }
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
 async function saveData() {
-    // บันทึกลงเครื่อง (LocalStorage)
+    // 1. บันทึกลงเครื่อง (LocalStorage) กันเหนียวไว้ก่อน
     localStorage.setItem('data_v1', JSON.stringify(installments));
+    console.log("💾 บันทึกลงเครื่องแล้ว");
 
-    // บันทึกลง Cloud: ต้องล็อกอิน และ ข้อมูลจากคลาวด์ต้องโหลดมาเสร็จก่อน (isCloudDataLoaded)
-    // เพื่อป้องกันการเอา "ความว่างเปล่า" ในเครื่องใหม่ ไปเซฟทับ "ข้อมูลจริง" ใน Cloud
-    if (currentUser && isCloudDataLoaded) { 
+    // 2. ถ้าล็อกอินอยู่ และระบบพร้อมซิงค์ ให้ส่งขึ้น Firebase ทันที
+    if (currentUser && isCloudDataLoaded) {
         try {
             const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
             await window.fbMethods.set(userRef, { 
                 installments: installments,
-                lastUpdate: Date.now()
+                lastUpdate: Date.now(),
+                userName: currentUser.displayName
             });
-            console.log("☁️ ซิงค์คลาวด์สำเร็จ");
+            console.log("☁️ ซิงค์ข้อมูลขึ้น Cloud เรียบร้อย");
         } catch (e) {
-            console.error("Cloud Sync Error", e);
+            console.error("☁️ Cloud Sync Error:", e);
         }
     }
 }
