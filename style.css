@@ -113,12 +113,34 @@ header {
     border-radius: 15px;
     border-left: 8px solid var(--navy);
     cursor: pointer;
+    position: relative;
 }
 .inst-card:hover { transform: scale(1.02); }
 .inst-card h3 { 
     margin: 0 0 15px 0; 
     font-size: 1.5rem; 
     color: var(--navy); 
+}
+.btn-edit-inst {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #f0f0f0;
+    border: none;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #555;
+    transition: 0.2s;
+}
+.btn-edit-inst:hover {
+    background: var(--navy);
+    color: white;
+    transform: scale(1.1);
 }
 .btn-create-dashed {
     width: 100%;
@@ -536,19 +558,27 @@ input:focus { border-color: var(--light-blue); outline: none; }
 }
 @media (max-width: 600px) {
     /* มือถือ */
-    .container { padding: 10px; }
+    .container { 
+        margin: 10px auto; 
+    }
     header h1 { font-size: 1.2rem; }
     .btn-header-list {
-        padding: 10px 20px !important;
-        font-size: 1rem !important;
-        height: 45px !important;
-        min-width: 100px !important;
+        min-width: 70px !important;
+        height: 32px !important;
+        font-size: 0.85rem !important;
+        padding: 0 10px !important;
+    }
+    .modal-header h2 {
+        font-size: 1.2rem;
     }
     .big-input { font-size: 1.8rem !important; }
+    .btn-save, .btn-confirm-modern, .btn-confirm-delete-modern {
+        font-size: 1.1rem;
+        padding: 12px;
+    }
     .inst-card h3 { font-size: 1.2rem; }
     .btn-save { font-size: 1.4rem; }
     .btn-login-outline { padding: 4px 8px; font-size: 0.8rem; }
-    .big-input { font-size: 1.8rem !important; }
     .modal-body div[style*="display: flex"] {
         flex-direction: column; /* มือถือให้เรียงลงมา */
         gap: 0 !important;
@@ -557,7 +587,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .tab-btn { font-size: 0.85rem; }
     .header-container {
         flex-direction: row; /* ให้หัวข้อยังอยู่แถวเดียวกันแต่ย่อขนาด */
-        padding: 10px;
+        padding: 5px 10px;
     }
     .header-container h1 {
         font-size: 1.4rem !important; /* ย่อชื่อวันที่ลงนิหนึ่งเพื่อให้ปุ่มไม่เบียดกัน */
@@ -592,13 +622,23 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .modal-body {
         padding: 25px 15px;
     }
+    .delete-detail-box {
+        font-size: 1.1rem;
+        padding: 15px;
+    }
+    .pill-btn {
+        font-size: 0.85rem;
+        padding: 8px 12px;
+    }
     .demo-badge { display: none; } /* ซ่อนคำว่าโหมดทดลองในมือถือเพื่อประหยัดพื้นที่ */
     .btn-login-outline { font-size: 0.8rem; padding: 4px 10px; }
     .header-action-group { gap: 8px; }
     .grid-container {
         grid-template-columns: 1fr; /* แถวเดียวเต็มจอ */
     }
-    #view-title { font-size: 1.1rem; }
+    #view-title { 
+        font-size: 1rem !important; 
+    }
 }
 
 /* แท็บเล็ต / iPad */
@@ -610,7 +650,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
         height: 40px !important;
     }
     .grid-container {
-        grid-template-columns: 1fr 1fr; /* สองคอลัมน์ */
+        grid-template-columns: 1fr 1fr;
     }
     .container { width: 90%; }
     .modern-modal {
@@ -619,6 +659,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .modal-content, .modern-modal {
         max-width: 500px; /* ขนาดพอเหมาะกับไอแพด */
     }
+    #view-title { font-size: 1.3rem; }
 
 }
 @media (min-width: 768px) {
@@ -647,7 +688,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
 }
 /* หน้าจอคอมพิวเตอร์ Desktop */
 @media (min-width: 1025px) {
-    .header-container { max-width: 900px; }
+    .header-container { max-width: 1000px; }
     .btn-header-list { 
         min-width: 100px !important; 
         padding: 8px 20px !important;
@@ -658,8 +699,12 @@ input:focus { border-color: var(--light-blue); outline: none; }
         color: var(--dark-blue) !important;
         transform: translateY(-2px);
     }
+    .btn-save:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
     .grid-container {
-        grid-template-columns: 1fr 1fr 1fr; /* สามคอลัมน์ */
+        grid-template-columns: 1fr 1fr 1fr; /* แสดง 3 คอลัมน์ */
     }
     .modal-content, .modern-modal {
         max-width: 450px;

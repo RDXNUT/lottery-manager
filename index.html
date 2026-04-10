@@ -106,9 +106,26 @@
                     <input type="number" id="input-number" class="big-input" placeholder="00" oninput="limitDigits(this)">
                 </div>
 
-                <div class="input-group">
+                <!-- สวใส่วนกรอกจำนวนเงิน -->
+                <div class="input-group" id="amount-area">
                     <label>จำนวนเงิน (บาท)</label>
+                    
+                    <!-- สำหรับเลข 2 หลัก (แสดงปกติ) -->
                     <input type="number" id="input-amount" class="big-input" placeholder="0.00">
+
+                    <!-- สำหรับเลข 3 หลัก (ซ่อนไว้ก่อน จะแสดงเมื่อเลือก 3 หลัก) -->
+                    <div id="three-digit-options" style="display: none; margin-top: 10px;">
+                        <div class="flex-row-modal" style="gap: 10px; margin-bottom: 10px;">
+                            <div style="flex: 1; background: #f9f9f9; padding: 10px; border-radius: 10px; border: 1px solid #ddd;">
+                                <label style="font-size: 1rem;"><input type="checkbox" id="check-straight" checked> ตรง</label>
+                                <input type="number" id="amt-straight" class="modern-input" placeholder="0" style="font-size: 1.5rem !important;">
+                            </div>
+                            <div style="flex: 1; background: #f9f9f9; padding: 10px; border-radius: 10px; border: 1px solid #ddd;">
+                                <label style="font-size: 1rem;"><input type="checkbox" id="check-toad"> โต๊ด</label>
+                                <input type="number" id="amt-toad" class="modern-input" placeholder="0" style="font-size: 1.5rem !important;">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <button class="btn-save" onclick="saveEntry()">บันทึกข้อมูล</button>
@@ -194,12 +211,13 @@
     <div id="add-installment-modal" class="modal">
         <div class="modal-content modal-shadow modern-modal">
             <div class="modal-header">
-                <h2>สร้างงวดใหม่</h2>
+                <h2 id="modal-inst-title">สร้างงวดใหม่</h2>
             </div>
             <div class="modal-body">
                 <div class="input-group">
-                    <label class="label-modern">ระบุวันที่งวด</label>
-                    <input type="text" id="new-inst-date" placeholder="เช่น 16 เมษายน 2567" class="modern-input">
+                    <label class="label-modern">เลือกวันที่งวด</label>
+                    <!-- เปลี่ยนเป็น type="date" -->
+                    <input type="date" id="new-inst-date" class="modern-input">
                 </div>
                 
                 <div class="flex-row-modal">
@@ -207,11 +225,10 @@
                         <label class="label-modern">งบทั้งหมดงวดนี้ (บาท)</label>
                         <input type="number" id="new-inst-max-total" value="100000" class="modern-input text-center">
                     </div>
-
                 </div>
 
                 <div class="modal-actions-container">
-                    <button class="btn-confirm-modern" onclick="confirmCreateInstallment()">ตกลงสร้างงวด</button>
+                    <button id="btn-confirm-inst" class="btn-confirm-modern" onclick="confirmCreateInstallment()">ตกลงสร้างงวด</button>
                     <button class="btn-cancel-modern" onclick="closeAddModal()">ยกเลิก</button>
                 </div>
             </div>

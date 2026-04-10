@@ -1,3 +1,13 @@
+let editingInstallmentId = null; // เก็บ ID เมื่อมีการแก้ไข
+
+// ฟังก์ชันแปลงวันที่ 2024-04-16 เป็น "16 เมษายน 2567"
+function formatThaiDate(dateStr) {
+    if(!dateStr) return "";
+    const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+    const d = new Date(dateStr);
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear() + 543}`;
+}
+
 let currentUser = null;
 let installments = [];
 let currentInstallmentId = null;
@@ -187,25 +197,30 @@ function renderInstallments() {
     list.innerHTML = '';
     
     installments.forEach(inst => {
-
         const limit = inst.maxTotal || 100000;
         const percent = (inst.total / limit) * 100;
-        
         let colorClass = 'bg-green';
         if(percent >= 100) colorClass = 'bg-red';
         else if(percent >= 80) colorClass = 'bg-yellow';
 
         const card = document.createElement('div');
         card.className = 'inst-card';
-        card.onclick = () => openInstallment(inst.id);
+        // ใช้ฟังก์ชัน formatThaiDate แสดงผลวันที่
+        const displayDate = inst.rawDate ? formatThaiDate(inst.rawDate) : inst.date;
+
         card.innerHTML = `
-            <h3>${inst.date}</h3>
-            <div class="label-group">
-                <span>ยอดรวม: <b>${inst.total.toLocaleString()}.-</b></span>
-                <span>${percent.toFixed(0)}%</span>
-            </div>
-            <div class="progress-bar-bg">
-                <div class="progress-fill ${colorClass}" style="width: ${Math.min(percent, 100)}%"></div>
+            <button class="btn-edit-inst" onclick="openEditInstallment(${inst.id}, event)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+            <div onclick="openInstallment(${inst.id})">
+                <h3>${displayDate}</h3>
+                <div class="label-group">
+                    <span>ยอดรวม: <b>${inst.total.toLocaleString()}.-</b></span>
+                    <span>${percent.toFixed(0)}%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-fill ${colorClass}" style="width: ${Math.min(percent, 100)}%"></div>
+                </div>
             </div>
         `;
         list.appendChild(card);
@@ -289,8 +304,21 @@ function setType(digit) {
     currentDigitLimit = digit;
     document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    document.getElementById('input-number').placeholder = "0".repeat(digit);
-    document.getElementById('input-number').value = '';
+    
+    const inputNum = document.getElementById('input-number');
+    const normalAmt = document.getElementById('input-amount');
+    const threeOpts = document.getElementById('three-digit-options');
+
+    inputNum.placeholder = "0".repeat(digit);
+    inputNum.value = '';
+
+    if(digit === 3) {
+        normalAmt.style.display = 'none'; // ซ่อนช่องเงินปกติ
+        threeOpts.style.display = 'block'; // โชว์ช่อง ตรง/โต๊ด
+    } else {
+        normalAmt.style.display = 'block';
+        threeOpts.style.display = 'none';
+    }
 }
 
 function limitDigits(el) {
@@ -302,31 +330,38 @@ function limitDigits(el) {
 function saveEntry() {
     const name = document.getElementById('cust-name').value;
     const num = document.getElementById('input-number').value;
-    const amount = parseFloat(document.getElementById('input-amount').value);
+    const inst = installments.find(i => i.id === currentInstallmentId);
+    
+    if(!name || !num) { showAlert("กรุณากรอกชื่อและตัวเลข"); return; }
 
-    if(!name || !num || isNaN(amount)) {
-        showAlert("กรุณากรอกข้อมูลให้ครบถ้วน");
-        return;
+    let entryData = { id: Date.now(), name: name, number: num };
+
+    if (currentDigitLimit === 3) {
+        const amtS = parseFloat(document.getElementById('amt-straight').value) || 0;
+        const amtT = parseFloat(document.getElementById('amt-toad').value) || 0;
+        const isS = document.getElementById('check-straight').checked;
+        const isT = document.getElementById('check-toad').checked;
+
+        if ((isS && amtS > 0) || (isT && amtT > 0)) {
+            entryData.amountStraight = isS ? amtS : 0;
+            entryData.amountToad = isT ? amtT : 0;
+            entryData.amount = entryData.amountStraight + entryData.amountToad;
+        } else {
+            showAlert("กรุณาระบุจำนวนเงิน ตรง หรือ โต๊ด"); return;
+        }
+    } else {
+        const amt = parseFloat(document.getElementById('input-amount').value);
+        if (isNaN(amt) || amt <= 0) { showAlert("กรุณาระบุจำนวนเงิน"); return; }
+        entryData.amount = amt;
     }
 
-    const inst = installments.find(i => i.id === currentInstallmentId);
-    inst.entries.unshift({
-        id: Date.now(),
-        name: name,
-        number: num,
-        amount: amount
-    });
+    inst.entries.unshift(entryData);
+    inst.total = inst.entries.reduce((sum, e) => sum + e.amount, 0);
     
-    // คำนวณยอดรวมใหม่
-    inst.total = inst.entries.reduce((sum, entry) => sum + entry.amount, 0);
-    
-    saveData();
-    updateUI();
-    updateNameList();
-    
-    // ล้างค่าหลังบันทึก (ยกเว้นชื่อ เผื่อแทงต่อ)
+    saveData(); updateUI(); updateNameList();
     document.getElementById('input-number').value = '';
-    document.getElementById('input-amount').value = '';
+    document.getElementById('amt-straight').value = '';
+    document.getElementById('amt-toad').value = '';
     document.getElementById('input-number').focus();
 }
 
@@ -449,12 +484,18 @@ function showCustomerDetail(name) {
     document.getElementById('detail-total').innerText = `รวมทั้งหมด: ${total.toLocaleString()}.-`;
     
     const listDiv = document.getElementById('detail-items');
-    listDiv.innerHTML = items.map(e => `
-        <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:1.2rem;">
-            <span>เลข: <b>${e.number}</b></span>
-            <span>${e.amount}.-</span>
-        </div>
-    `).join('');
+    listDiv.innerHTML = items.map(e => {
+        let amtText = `${e.amount}.-`;
+        if(e.number.length === 3) {
+            amtText = `<span style="font-size:0.9rem; color:#666;">(ตรง:${e.amountStraight} โต๊ด:${e.amountToad})</span> ${e.amount}.-`;
+        }
+        return `
+            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:1.1rem;">
+                <span>เลข: <b>${e.number}</b></span>
+                <span>${amtText}</span>
+            </div>
+        `;
+    }).join('');
 
     document.getElementById('detail-modal').style.display = 'flex';
 }
@@ -496,21 +537,54 @@ window.closeAlert = () => document.getElementById('alert-modal').style.display =
 window.renderInstallments = renderInstallments;
 // ฟังก์ชันเปิดเพิ่มงวด
 window.createNewInstallment = function() {
-    const modal = document.getElementById('add-installment-modal');
-    modal.style.display = 'flex';
+    editingInstallmentId = null; // ล้าง ID การแก้ไข
+    document.getElementById('modal-inst-title').innerText = "สร้างงวดใหม่";
+    document.getElementById('btn-confirm-inst').innerText = "ตกลงสร้างงวด";
     document.getElementById('new-inst-date').value = '';
-    document.getElementById('new-inst-date').focus();
+    document.getElementById('new-inst-max-total').value = 100000;
+    document.getElementById('add-installment-modal').style.display = 'flex';
 };
-
+// ฟังก์ชันเปิด Modal ในโหมดแก้ไข
+window.openEditInstallment = function(id, event) {
+    event.stopPropagation(); // กันไม่ให้ไปเปิดหน้างวด
+    editingInstallmentId = id;
+    const inst = installments.find(i => i.id === id);
+    
+    document.getElementById('modal-inst-title').innerText = "แก้ไขข้อมูลวันที่/งบ";
+    document.getElementById('btn-confirm-inst').innerText = "บันทึกการแก้ไข";
+    document.getElementById('new-inst-date').value = inst.rawDate || ""; // วันที่แบบ YYYY-MM-DD
+    document.getElementById('new-inst-max-total').value = inst.maxTotal || 100000;
+    document.getElementById('add-installment-modal').style.display = 'flex';
+};
 window.confirmCreateInstallment = function() {
-    const dateInput = document.getElementById('new-inst-date');
-    const dateStr = dateInput.value;
+    const rawDate = document.getElementById('new-inst-date').value;
     const maxTotal = parseFloat(document.getElementById('new-inst-max-total').value) || 100000;
-    if(!dateStr) { showAlert("กรุณาระบุวันที่"); return; }
-    installments.push({ id: Date.now(), date: dateStr, total: 0, maxTotal: maxTotal, entries: [], paidList: {} });
-    saveData(); renderInstallments(); closeAddModal();
-};
 
+    if(!rawDate) { showAlert("กรุณาเลือกวันที่"); return; }
+
+    if (editingInstallmentId) {
+        // โหมดแก้ไข
+        const inst = installments.find(i => i.id === editingInstallmentId);
+        inst.rawDate = rawDate;
+        inst.date = formatThaiDate(rawDate);
+        inst.maxTotal = maxTotal;
+    } else {
+        // โหมดสร้างใหม่
+        installments.push({ 
+            id: Date.now(), 
+            rawDate: rawDate,
+            date: formatThaiDate(rawDate), 
+            total: 0, 
+            maxTotal: maxTotal, 
+            entries: [], 
+            paidList: {} 
+        });
+    }
+
+    saveData(); 
+    renderInstallments(); 
+    closeAddModal();
+};
 // ฟังก์ชันปิด Alert 
 function closeAlert() {
     document.getElementById('alert-modal').style.display = 'none';
@@ -654,103 +728,168 @@ function isToad(entryNum, winNum) {
 function runAnalysis() {
     const inst = installments.find(i => i.id === currentInstallmentId);
     const content = document.getElementById('report-content');
-    const res3 = document.getElementById('result-3-digit').value; // เลข 3 ตัวตรง
-    const res2 = document.getElementById('result-2-digit').value; // เลข 2 ตัวตรง
+    const res3 = document.getElementById('result-3-digit').value; // เลขที่ออก 3 ตัว
+    const res2 = document.getElementById('result-2-digit').value; // เลขที่ออก 2 ตัว
 
     let totalPayout = 0;
-    let winners = [];
+    let winners3 = [];
+    let winners2 = [];
 
     inst.entries.forEach(e => {
-        let winAmount = 0;
-        let winType = "";
-
+        // --- กรณีเลข 2 หลัก (เหมือนเดิม) ---
         if (e.number.length === 2 && res2 && e.number === res2) {
-            // 2 ตัวตรง (x70)
-            winAmount = e.amount * 70;
-            winType = "2 ตัวตรง";
-        } else if (e.number.length === 3 && res3) {
-            if (e.number === res3) {
-                // 3 ตัวตรง (x500)
-                winAmount = e.amount * 500;
-                winType = "3 ตัวตรง";
-            } else if (isToad(e.number, res3)) {
-                // 3 ตัวโต๊ด (x150)
-                winAmount = e.amount * 150;
-                winType = "3 ตัวโต๊ด";
-            }
-        }
-
-        if (winAmount > 0) {
-            winners.push({ ...e, winAmount, winType });
+            let winAmount = e.amount * 70;
+            winners2.push({ ...e, winAmount, winType: "2 ตัวตรง" });
             totalPayout += winAmount;
+        } 
+        
+        // --- กรณีเลข 3 หลัก (ปรับปรุงใหม่แยก ตรง/โต๊ด) ---
+        else if (e.number.length === 3 && res3) {
+            
+            // 1. เช็คถูกรางวัล "ตรง"
+            // เงื่อนไข: เลขต้องตรงเป๊ะ และ ต้องมียอดเงินที่แทงในช่อง "ตรง"
+            if (e.number === res3 && e.amountStraight > 0) {
+                let winAmount = e.amountStraight * 500;
+                winners3.push({ 
+                    ...e, 
+                    winAmount, 
+                    winType: "3 ตัวตรง", 
+                    displayAmount: e.amountStraight 
+                });
+                totalPayout += winAmount;
+            }
+
+            // 2. เช็คถูกรางวัล "โต๊ด"
+            // เงื่อนไข: เลขสลับกันได้ (isToad) และ ต้องมียอดเงินที่แทงในช่อง "โต๊ด"
+            // หมายเหตุ: ถ้าออกตรงเป๊ะ คนที่แทงโต๊ดไว้ก็ได้ตังค์ด้วย (ตามกติกาทั่วไป)
+            if (isToad(e.number, res3) && e.amountToad > 0) {
+                let winAmount = e.amountToad * 150;
+                winners3.push({ 
+                    ...e, 
+                    winAmount, 
+                    winType: "3 ตัวโต๊ด", 
+                    displayAmount: e.amountToad 
+                });
+                totalPayout += winAmount;
+            }
         }
     });
 
-    const netProfit = inst.total - totalPayout;
+    // --- ส่วนแสดงผล HTML (เหมือนเดิมแต่ปรับยอดเงินที่แทงให้ตรงหมวด) ---
+    renderProfitHTML(inst, totalPayout, winners3, winners2, content);
+}
 
+// แยกฟังก์ชันแสดงผลออกมาเพื่อให้โค้ดสะอาดขึ้น
+function renderProfitHTML(inst, totalPayout, winners3, winners2, content) {
+    const netProfit = inst.total - totalPayout;
     let html = `
         <div class="profit-summary-grid">
             <div class="summary-box"><h4>ยอดรับทั้งหมด</h4><p>${inst.total.toLocaleString()}</p></div>
             <div class="summary-box"><h4>ยอดจ่ายทั้งหมด</h4><p style="color:var(--red)">${totalPayout.toLocaleString()}</p></div>
             <div class="summary-box net-profit">
                 <h4>กำไร/ขาดทุนสุทธิ</h4>
-                <p class="${netProfit >= 0 ? 'text-profit' : 'text-loss'}">
-                    ${netProfit.toLocaleString()} บาท
-                </p>
+                <p class="${netProfit >= 0 ? 'text-profit' : 'text-loss'}">${netProfit.toLocaleString()} บาท</p>
+            </div>
+        </div>
+        <h3 style="margin:25px 0 10px; color:var(--navy); border-bottom:2px solid #ddd;">รายชื่อผู้ถูกรางวัล</h3>
+    `;
+
+    // แสดงหมวด 3 ตัว
+    html += `<h4 style="margin:15px 0 5px;">⭐ หมวดเลข 3 ตัว</h4>`;
+    if(winners3.length === 0) html += `<div class="report-card" style="text-align:center; color:#999;">ไม่มีผู้ถูกรางวัล</div>`;
+    winners3.forEach(w => {
+        html += generateWinnerCard(w, inst);
+    });
+
+    // แสดงหมวด 2 ตัว
+    html += `<h4 style="margin:20px 0 5px;">⭐ หมวดเลข 2 ตัว</h4>`;
+    if(winners2.length === 0) html += `<div class="report-card" style="text-align:center; color:#999;">ไม่มีผู้ถูกรางวัล</div>`;
+    winners2.forEach(w => {
+        html += generateWinnerCard(w, inst);
+    });
+
+    content.innerHTML = html;
+}
+
+// ฟังก์ชันเสริมสำหรับสร้าง HTML การ์ดผู้ชนะ (เพื่อลดความซ้ำซ้อนของโค้ด)
+function generateWinnerCard(w, inst) {
+    const displayAmt = w.displayAmount || w.amount; 
+    return `
+        <div class="report-card winner-item" style="border-left: 5px solid ${w.winType.includes('โต๊ด') ? '#3498db' : '#f1c40f'}; margin-bottom: 10px;">
+            <div class="person-row" style="margin-bottom: 0; padding: 5px 0;">
+                <span>
+                    <b>${w.name}</b> 
+                    <span style="font-size: 0.9rem; color: #666;">(${w.winType}: ${w.number})</span>
+                    <br>
+                    <span style="color:#888; font-size:0.85rem;">(ทุนเดิมพัน: ${displayAmt.toLocaleString()}.-)</span>
+                </span>
+                <span class="text-profit" style="font-size: 1.3rem; font-weight: 700;">
+                    ถูก ${w.winAmount.toLocaleString()}.-
+                </span>
             </div>
         </div>
     `;
-
-    html += `<h3 style="margin: 20px 0 10px 5px;">2. ผู้โชคดี</h3>`;
-    if (winners.length === 0) {
-        html += `<div class="report-card" style="text-align:center; color:#999;">ยังไม่มีผู้ถูกรางวัล</div>`;
-    } else {
-        winners.forEach(w => {
-            const isPaid = inst.paidList && inst.paidList[w.name];
-            html += `
-                <div class="report-card winner-item" style="border-left: 5px solid ${w.winType.includes('โต๊ด') ? '#3498db' : '#f1c40f'}">
-                    <div class="person-row">
-                        <span><b>${w.name}</b> (${w.winType}: ${w.number}) <span style="color:#777; font-size:1.1rem;">(แทง ${w.amount.toLocaleString()}.-)</span></span>
-                        <span class="text-profit">ถูก ${w.winAmount.toLocaleString()}.-</span>
-                    </div>
-                    <button onclick="togglePaymentStatus('${w.name}')" 
-                            class="btn-toggle-pay ${isPaid ? 'btn-status-paid' : 'btn-status-unpaid'}">
-                        ${isPaid ? 'จ่ายเงินแล้ว' : 'จ่ายเงิน'}
-                    </button>
-                </div>
-            `;
-        });
-    }
-    // ส่วนที่ 3 (ยอดตัดส่ง) 
-    content.innerHTML = html;
 }
 // ฟังก์ชันเสริมสำหรับแยกตามเลข 
 function renderNumberGroupedReport(inst, content) {
+    const searchTerm = document.getElementById('search-number').value;
+    content.innerHTML = ''; // ล้างข้อมูลเดิมก่อนวาดใหม่
+
     // 1. กลุ่มข้อมูลตามเลข
     const grouped = inst.entries.reduce((acc, e) => {
+        if (searchTerm && !e.number.includes(searchTerm)) return acc;
         if (!acc[e.number]) acc[e.number] = { items: [], total: 0 };
         acc[e.number].items.push(e);
         acc[e.number].total += e.amount;
         return acc;
     }, {});
 
-    // 2. แปลงเป็น Array และเรียงลำดับตาม total (มากไปน้อย)
-    const sortedNumbers = Object.keys(grouped).sort((a, b) => grouped[b].total - grouped[a].total);
+    const allKeys = Object.keys(grouped);
 
-    // 3. แสดงผล
-    sortedNumbers.forEach(num => {
-        const data = grouped[num];
-        const card = document.createElement('div');
-        card.className = 'report-card';
-        card.innerHTML = `
-            <div class="num-header">
-                <span class="num-title">เลข ${num}</span>
-                <b style="color:var(--navy); font-size:1.3rem;">รวม: ${data.total.toLocaleString()}.-</b>
-            </div>
-            ${data.items.map(e => `<div class="person-row"><span>${e.name}</span> <span>${e.amount.toLocaleString()}.-</span></div>`).join('')}
-        `;
-        content.appendChild(card);
-    });
+    // 2. แยกกลุ่ม 2 หลัก และ 3 หลัก พร้อมเรียงลำดับจากน้อยไปมาก
+    const group2 = allKeys.filter(k => k.length === 2).sort((a, b) => a.localeCompare(b));
+    const group3 = allKeys.filter(k => k.length === 3).sort((a, b) => a.localeCompare(b));
+
+    if (group2.length === 0 && group3.length === 0) {
+        content.innerHTML = `<div style="text-align:center; padding:20px; color:#999;">ไม่พบข้อมูลเลขที่ค้นหา</div>`;
+        return;
+    }
+
+    // 3. ฟังก์ชันช่วยวาดการ์ด
+    const drawCards = (keys, title) => {
+        if (keys.length > 0) {
+            const header = document.createElement('h3');
+            header.style = "margin: 20px 0 10px 5px; color: var(--navy); border-bottom: 2px solid #eee; padding-bottom: 5px;";
+            header.innerText = title;
+            content.appendChild(header);
+
+            keys.forEach(num => {
+                const data = grouped[num];
+                const card = document.createElement('div');
+                card.className = 'report-card';
+                card.innerHTML = `
+                    <div class="num-header">
+                        <span class="num-title" style="font-size: 1.4rem;">เลข ${num}</span>
+                        <b style="color:var(--navy); font-size:1.2rem;">รวม: ${data.total.toLocaleString()}.-</b>
+                    </div>
+                    ${data.items.map(e => `
+                        <div class="person-row">
+                            <span style="font-size: 1rem;">
+                                <b>${e.name}</b> 
+                                ${e.number.length === 3 ? `<br><small style="color:#888;">(ตรง:${e.amountStraight} โต๊ด:${e.amountToad})</small>` : ''}
+                            </span> 
+                            <span style="font-weight: 600;">${e.amount.toLocaleString()}.-</span>
+                        </div>
+                    `).join('')}
+                `;
+                content.appendChild(card);
+            });
+        }
+    };
+
+    // 4. สั่งวาดหมวด 2 หลักก่อน แล้วตามด้วย 3 หลัก
+    drawCards(group2, "📊 หมวดเลข 2 หลัก (00-99)");
+    drawCards(group3, "📊 หมวดเลข 3 หลัก (000-999)");
 }
 
 function closeLoginModal() {
