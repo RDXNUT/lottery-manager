@@ -67,7 +67,7 @@ async function handleGoogleLogin() {
 }
 
 // --- ฟังก์ชันจัดการ Modal (รวมชุดเดียว) ---
-window.openLoginModal = function() { document.getElementById('login-modal').style.display = 'block'; }
+window.openLoginModal = function() { document.getElementById('login-modal').style.display = 'flex'; }
 window.closeLoginModal = function() { document.getElementById('login-modal').style.display = 'none'; }
 window.closeAddModal = function() { document.getElementById('add-installment-modal').style.display = 'none'; }
 window.closeCustomerModal = function() { document.getElementById('customer-modal').style.display = 'none'; }
@@ -384,7 +384,7 @@ function openCustomerModal() {
         `;
         container.appendChild(div);
     }
-    modal.style.display = 'block';
+    document.getElementById('customer-modal').style.display = 'flex';
 }
 
 function showCustomerDetail(name) {
@@ -403,7 +403,7 @@ function showCustomerDetail(name) {
         </div>
     `).join('');
 
-    document.getElementById('detail-modal').style.display = 'block';
+    document.getElementById('detail-modal').style.display = 'flex';
 }
 
 function closeCustomerModal() { document.getElementById('customer-modal').style.display = 'none'; }
@@ -430,22 +430,25 @@ function closeAddModal() {
 
 
 
-// ฟังก์ชันสำหรับเรียกใช้งาน Alert แบบสวยงาม
+// ฟังก์ชันแจ้งเตือน
 function showAlert(msg) {
     document.getElementById('alert-message').innerText = msg;
-    document.getElementById('alert-modal').style.display = 'block';
+    document.getElementById('alert-modal').style.display = 'flex';
 }
+
 // ผูกฟังก์ชันเข้ากับ Window เพื่อให้ HTML เรียกใช้งานผ่าน onclick ได้ชัวร์ๆ
 window.handleGoogleLogin = handleGoogleLogin;
 window.openLoginModal = () => document.getElementById('login-modal').style.display = 'block';
 window.closeLoginModal = () => document.getElementById('login-modal').style.display = 'none';
 window.closeAlert = () => document.getElementById('alert-modal').style.display = 'none';
 window.renderInstallments = renderInstallments;
+// ฟังก์ชันเปิดเพิ่มงวด
 window.createNewInstallment = function() {
-    document.getElementById('add-installment-modal').style.display = 'block';
+    document.getElementById('add-installment-modal').style.display = 'flex';
     document.getElementById('new-inst-date').value = '';
     document.getElementById('new-inst-date').focus();
 };
+
 window.confirmCreateInstallment = function() {
     const dateInput = document.getElementById('new-inst-date');
     const dateStr = dateInput.value;
@@ -460,18 +463,12 @@ function closeAlert() {
     document.getElementById('alert-modal').style.display = 'none';
 }
 
-// ฟังก์ชันถามก่อนลบทั้งงวด
+// ฟังก์ชันลบ
 function askDeleteInstallment() {
     const inst = installments.find(i => i.id === currentInstallmentId);
-    
-    // ตั้งค่าข้อความใน Modal ยืนยันการลบที่มีอยู่แล้ว
-    document.getElementById('delete-detail').innerText = `ทั้งงวด: ${inst.date} (ยอดรวม ${inst.total.toLocaleString()}.-)`;
-    document.getElementById('delete-confirm-modal').style.display = 'block';
-    
-    // เปลี่ยนคำสั่งปุ่มยืนยันให้เป็นการลบทั้งงวดแทน
-    document.getElementById('confirm-delete-btn').onclick = function() {
-        executeDeleteInstallment();
-    };
+    document.getElementById('delete-detail').innerText = `ทั้งงวด: ${inst.date}`;
+    document.getElementById('delete-confirm-modal').style.display = 'flex';
+    document.getElementById('confirm-delete-btn').onclick = function() { executeDeleteInstallment(); };
 }
 
 // ฟังก์ชันลบงวดออกจากระบบจริงๆ

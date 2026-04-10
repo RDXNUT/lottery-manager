@@ -306,7 +306,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
 
 /* --- 9. MODALS (ดีไซน์ใหม่ทั้งหมด) --- */
 .modal {
-    display: none; /* สำคัญ: ใน JS เวลาสั่งเปิดให้ใช้ .style.display = 'flex' แทน 'block' */
+    display: none; /* เมื่อสั่งเปิดผ่าน JS จะเปลี่ยนเป็น flex */
     position: fixed;
     z-index: 2000;
     left: 0;
@@ -316,23 +316,19 @@ input:focus { border-color: var(--light-blue); outline: none; }
     background-color: rgba(0,0,0,0.7);
     backdrop-filter: blur(5px);
     
-    /* เพิ่ม 3 บรรทัดนี้เพื่อจัดลูกให้อยู่กลางจอ */
-    display: none; /* เริ่มต้นซ่อนไว้ */
+    /* การจัดกึ่งกลางที่ชัวร์ที่สุด */
     align-items: center; 
     justify-content: center;
-    padding: 20px; /* กันตัวป็อปอัพชิดขอบจอเกินไปในมือถือ */
+    padding: 15px; /* ระยะกันขอบจอสำหรับมือถือ */
 }
 
 .modern-modal {
     background: white;
-    margin: 0;
     width: 100%;
-    max-width: 450px;
+    max-width: 450px; /* ขนาดสำหรับโน้ตบุ๊ค */
     border-radius: 25px;
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    top: 50%; 
-    transform: translateY(-50%);
 }
 .modal-shadow {
     box-shadow: 0 15px 30px rgba(0,0,0,0.5);
@@ -512,6 +508,18 @@ input:focus { border-color: var(--light-blue); outline: none; }
         padding: 10px 15px;
     }
 }
+@media (max-width: 480px) { /* มือถือ */
+    .modern-modal {
+        max-width: 95%;
+        border-radius: 20px;
+    }
+    .modal-body { padding: 20px 15px; }
+    .btn-confirm-modern, .btn-cancel-modern { 
+        padding: 15px; 
+        font-size: 1.2rem; 
+    }
+    .modal-header h2 { font-size: 1.3rem; }
+}
 @media (max-width: 600px) {
     /* มือถือ */
     .container { padding: 10px; }
@@ -590,7 +598,9 @@ input:focus { border-color: var(--light-blue); outline: none; }
         grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
-    .modern-modal { width: 400px; margin: 0 auto; }
+    .modern-modal {
+        max-width: 85%;
+    }
     .input-card {
         padding: 30px;
     }
