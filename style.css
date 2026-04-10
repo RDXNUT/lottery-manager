@@ -306,29 +306,43 @@ input:focus { border-color: var(--light-blue); outline: none; }
 
 /* --- 9. MODALS (ดีไซน์ใหม่ทั้งหมด) --- */
 .modal {
-    display: none; /* เมื่อสั่งเปิดผ่าน JS จะเปลี่ยนเป็น flex */
+    display: none; /* เริ่มต้นซ่อนไว้ */
     position: fixed;
-    z-index: 2000;
+    z-index: 9999; /* ให้มั่นใจว่าอยู่หน้าสุด */
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.7);
+    background-color: rgba(0,0,0,0.6);
     backdrop-filter: blur(5px);
     
-    /* การจัดกึ่งกลางที่ชัวร์ที่สุด */
+    /* บังคับจัดกึ่งกลาง */
     align-items: center; 
     justify-content: center;
-    padding: 15px; /* ระยะกันขอบจอสำหรับมือถือ */
+    display: none; /* จะถูกเปลี่ยนเป็น flex โดย JS */
 }
-
+.modal-content, .modern-modal {
+    background-color: white;
+    width: 100%;
+    margin: 0 auto; /* ล้าง margin เดิม */
+    max-height: 90vh; /* ป้องกันป๊อปอัพยาวเกินหน้าจอ */
+    overflow-y: auto; /* ถ้าเนื้อหาเยอะให้เลื่อนขึ้นลงได้ */
+    position: relative;
+    border-radius: 20px;
+}
 .modern-modal {
     background: white;
-    width: 100%;
-    max-width: 450px; /* ขนาดสำหรับโน้ตบุ๊ค */
-    border-radius: 25px;
+    width: 90%; /* สำหรับมือถือ */
+    max-width: 400px; /* สำหรับคอมพิวเตอร์ */
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+    
+    /* ล้างค่า position ที่อาจทำให้เบี้ยว */
+    margin: 0 auto; 
+    position: relative; 
+    top: unset; 
+    left: unset;
 }
 .modal-shadow {
     box-shadow: 0 15px 30px rgba(0,0,0,0.5);
@@ -568,8 +582,15 @@ input:focus { border-color: var(--light-blue); outline: none; }
         width: 100%;    
     }
     .modern-modal {
-        width: 100%;
-        margin: 0;
+        max-width: 100%;
+        border-radius: 20px;
+    }
+    .modal-content, .modern-modal {
+        max-width: 95%; /* เกือบเต็มจอ */
+        border-radius: 15px;
+    }
+    .modal-body {
+        padding: 25px 15px;
     }
     .demo-badge { display: none; } /* ซ่อนคำว่าโหมดทดลองในมือถือเพื่อประหยัดพื้นที่ */
     .btn-login-outline { font-size: 0.8rem; padding: 4px 10px; }
@@ -592,6 +613,13 @@ input:focus { border-color: var(--light-blue); outline: none; }
         grid-template-columns: 1fr 1fr; /* สองคอลัมน์ */
     }
     .container { width: 90%; }
+    .modern-modal {
+        max-width: 380px;
+    }
+    .modal-content, .modern-modal {
+        max-width: 500px; /* ขนาดพอเหมาะกับไอแพด */
+    }
+
 }
 @media (min-width: 768px) {
     #installment-list {
@@ -613,6 +641,9 @@ input:focus { border-color: var(--light-blue); outline: none; }
     }
     #search-box-wrap { grid-column: span 2; }
     .google-btn { padding: 15px; }
+    .modern-modal {
+        max-width: 400px;
+    }
 }
 /* หน้าจอคอมพิวเตอร์ Desktop */
 @media (min-width: 1025px) {
@@ -629,6 +660,9 @@ input:focus { border-color: var(--light-blue); outline: none; }
     }
     .grid-container {
         grid-template-columns: 1fr 1fr 1fr; /* สามคอลัมน์ */
+    }
+    .modal-content, .modern-modal {
+        max-width: 450px;
     }
 }
 

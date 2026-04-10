@@ -1,30 +1,94 @@
 let currentUser = null;
-let installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+let installments = [];
 let currentInstallmentId = null;
 let currentDigitLimit = 2;
+let isCloudDataLoaded = false; // ตัวแปรป้องกันการเขียนทับข้อมูลเดิม
 
-// ตรวจสอบสถานะการล็อกอิน
-function initAuth() {
-    if (window.fbMethods) {
-        window.fbMethods.onAuthStateChanged(window.fbAuth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('login-nav-btn').innerText = user.displayName;
-                document.querySelector('.demo-badge').innerText = "☁️ คลาวด์ซิงค์";
-                document.querySelector('.demo-badge').style.color = "#2ecc71";
-                loadDataFromCloud();
-            } else {
-                currentUser = null;
-                document.getElementById('login-nav-btn').innerText = "เข้าสู่ระบบ";
-                document.querySelector('.demo-badge').innerText = "โหมดทดลองใช้";
-                document.querySelector('.demo-badge').style.color = "rgba(255,255,255,0.7)";
-                installments = JSON.parse(localStorage.getItem('data_v1')) || [];
-                renderInstallments();
-            }
+
+// --- 1. ระบบจัดการ Auth และปุ่ม Header ---
+function initApp() {
+    if (!window.fbMethods) {
+        setTimeout(initApp, 100);
+        return;
+    }
+
+    window.fbMethods.onAuthStateChanged(window.fbAuth, async (user) => {
+        const badge = document.querySelector('.demo-badge');
+        const loginBtn = document.getElementById('login-nav-btn');
+
+        if (user) {
+            currentUser = user;
+            loginBtn.innerText = user.displayName;
+            // เปลี่ยนฟังชั่นคลิก: ถ้าล็อกอินอยู่ คลิกแล้วจะถามว่า "ออกจากระบบไหม?"
+            loginBtn.onclick = () => askLogout(); 
+            
+            badge.innerText = "☁️ คลาวด์ซิงค์";
+            badge.style.color = "#2ecc71";
+            await loadDataFromCloud();
+        } else {
+            currentUser = null;
+            isCloudDataLoaded = false;
+            loginBtn.innerText = "เข้าสู่ระบบ";
+            // ถ้าไม่ได้ล็อกอิน คลิกแล้วจะเปิดหน้าต่างล็อกอิน
+            loginBtn.onclick = () => openLoginModal(); 
+
+            badge.innerText = "โหมดทดลองใช้";
+            badge.style.color = "rgba(255,255,255,0.7)";
+            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+            renderInstallments();
+        }
+    });
+}
+initApp();
+
+function askLogout() {
+    // ใช้ confirm ง่ายๆ หรือจะสร้าง Modal สวยๆ ก็ได้
+    if (confirm(`คุณต้องการออกจากระบบ (บัญชี: ${currentUser.displayName}) ใช่หรือไม่?`)) {
+        window.fbMethods.signOut(window.fbAuth).then(() => {
+            console.log("Logged Out");
+            // ข้อมูลจะถูกดึงจาก LocalStorage อัตโนมัติโดย onAuthStateChanged
         });
     }
 }
-setTimeout(initAuth, 1000); // หน่วงเวลาเล็กน้อยเพื่อให้ Firebase พร้อมใช้งาน
+
+// --- 2. ฟังก์ชันโหลดข้อมูลจาก Cloud ---
+async function loadDataFromCloud() {
+    if (!currentUser) return;
+    const dbRef = window.fbMethods.ref(window.fbDb);
+    try {
+        const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}`));
+        if (snapshot.exists()) {
+            installments = snapshot.val().installments || [];
+        } else {
+            // ถ้าเป็นบัญชีใหม่ ยังไม่มีข้อมูลบนคลาวด์ ให้ใช้ข้อมูลจากเครื่องไปพลางๆ
+            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+        }
+        isCloudDataLoaded = true; // ยืนยันว่าโหลดข้อมูลจากบัญชีนี้เสร็จแล้ว พร้อมเซฟทับได้
+        renderInstallments();
+    } catch (error) {
+        console.error("Load Error", error);
+    }
+}
+
+// --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
+async function saveData() {
+    // บันทึกลงเครื่องเสมอ (LocalStorage)
+    localStorage.setItem('data_v1', JSON.stringify(installments));
+
+    // บันทึกลง Cloud เฉพาะเมื่อล็อกอินแล้ว และโหลดข้อมูลเดิมมาเรียบร้อยแล้ว
+    if (currentUser && window.fbMethods && isCloudDataLoaded) {
+        try {
+            const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
+            await window.fbMethods.set(userRef, { 
+                installments: installments,
+                lastUpdate: Date.now()
+            });
+            console.log("☁️ ซิงค์คลาวด์สำเร็จ");
+        } catch (e) {
+            console.error("Cloud Sync Error", e);
+        }
+    }
+}
 
 // --- ระบบตรวจสอบ Firebase และสถานะการล็อกอิน ---
 function startApp() {
@@ -67,8 +131,14 @@ async function handleGoogleLogin() {
 }
 
 // --- ฟังก์ชันจัดการ Modal (รวมชุดเดียว) ---
-window.openLoginModal = function() { document.getElementById('login-modal').style.display = 'flex'; }
-window.closeLoginModal = function() { document.getElementById('login-modal').style.display = 'none'; }
+window.openLoginModal = function() {
+    const modal = document.getElementById('login-modal');
+    modal.style.display = 'flex'; // *** ต้องเป็น flex เท่านั้น ***
+}
+
+window.closeLoginModal = function() {
+    document.getElementById('login-modal').style.display = 'none';
+}
 window.closeAddModal = function() { document.getElementById('add-installment-modal').style.display = 'none'; }
 window.closeCustomerModal = function() { document.getElementById('customer-modal').style.display = 'none'; }
 window.closeDetailModal = function() { document.getElementById('detail-modal').style.display = 'none'; }
@@ -94,32 +164,6 @@ window.fbMethods.onAuthStateChanged(window.fbAuth, (user) => {
     }
 });
 
-// ฟังก์ชันบันทึกข้อมูล
-async function saveData() {
-    localStorage.setItem('data_v1', JSON.stringify(installments));
-    if (currentUser && window.fbMethods) {
-        try {
-            const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
-            await window.fbMethods.set(userRef, { 
-                installments: installments,
-                lastUpdate: Date.now()
-            });
-        } catch (e) { console.error("Cloud Sync Error: ", e); }
-    }
-}
-
-// ฟังก์ชันโหลดข้อมูล
-async function loadDataFromCloud() {
-    if (!currentUser || !window.fbMethods) return;
-    const dbRef = window.fbMethods.ref(window.fbDb);
-    try {
-        const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}`));
-        if (snapshot.exists()) {
-            installments = snapshot.val().installments || [];
-            renderInstallments();
-        }
-    } catch (error) { console.error("Load Error: ", error); }
-}
 
 document.getElementById('user-list-btn').style.display = 'none';
 document.getElementById('report-btn').style.display = 'none';
@@ -160,8 +204,8 @@ function renderInstallments() {
 }
 
 function createNewInstallment() {
-    document.getElementById('add-installment-modal').style.display = 'block';
-    document.getElementById('new-inst-date').value = ''; // ล้างค่าเก่า
+    document.getElementById('add-installment-modal').style.display = 'flex';
+    document.getElementById('new-inst-date').value = '';
     document.getElementById('new-inst-date').focus();
 }
 
@@ -328,7 +372,7 @@ function deleteEntry(entryId) {
         <span style="font-size: 1.8rem;">${entry.number}</span> (${entry.amount}.-)
     `;
     
-    document.getElementById('delete-confirm-modal').style.display = 'block';
+    document.getElementById('delete-confirm-modal').style.display = 'flex';
     
     document.getElementById('confirm-delete-btn').onclick = function() {
         executeDelete();
@@ -429,7 +473,6 @@ function closeAddModal() {
 }
 
 
-
 // ฟังก์ชันแจ้งเตือน
 function showAlert(msg) {
     document.getElementById('alert-message').innerText = msg;
@@ -438,13 +481,14 @@ function showAlert(msg) {
 
 // ผูกฟังก์ชันเข้ากับ Window เพื่อให้ HTML เรียกใช้งานผ่าน onclick ได้ชัวร์ๆ
 window.handleGoogleLogin = handleGoogleLogin;
-window.openLoginModal = () => document.getElementById('login-modal').style.display = 'block';
+window.openLoginModal = () => document.getElementById('login-modal').style.display = 'flex';
 window.closeLoginModal = () => document.getElementById('login-modal').style.display = 'none';
 window.closeAlert = () => document.getElementById('alert-modal').style.display = 'none';
 window.renderInstallments = renderInstallments;
 // ฟังก์ชันเปิดเพิ่มงวด
 window.createNewInstallment = function() {
-    document.getElementById('add-installment-modal').style.display = 'flex';
+    const modal = document.getElementById('add-installment-modal');
+    modal.style.display = 'flex';
     document.getElementById('new-inst-date').value = '';
     document.getElementById('new-inst-date').focus();
 };
