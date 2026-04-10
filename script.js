@@ -130,27 +130,29 @@ async function loadDataFromCloud() {
 
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
 async function saveData() {
-    // 1. ถ้ายังโหลดข้อมูลจาก Cloud ไม่เสร็จ ห้ามเซฟทับเด็ดขาด!
-    if (!isCloudDataLoaded) {
-        console.log("⚠️ รอก่อน... ระบบกำลังโหลดข้อมูล ห้ามเซฟทับ");
+    // 1. ป้องกันการเซฟทับถ้าข้อมูลจาก Cloud ยังโหลดไม่เสร็จ
+    if (!isCloudDataLoaded && currentUser) {
+        console.log("⚠️ กำลังโหลดข้อมูลจาก Cloud... ระงับการเขียนทับ");
         return;
     }
 
-    // 2. เซฟลงเครื่องเสมอ
+    // 2. บันทึกลง LocalStorage เสมอ (เพื่อความรวดเร็วในการเปิดครั้งถัดไป)
     localStorage.setItem('data_v1', JSON.stringify(installments));
 
-    // 3. ถ้าล็อกอินอยู่ ให้ส่งขึ้น Cloud
+    // 3. ถ้ามีการล็อกอิน ให้ส่งข้อมูลขึ้น Firebase Realtime Database
     if (currentUser) {
         try {
             const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
             await window.fbMethods.set(userRef, { 
                 installments: installments,
                 lastUpdate: Date.now(),
-                userName: currentUser.displayName
+                userName: currentUser.displayName,
+                email: currentUser.email
             });
-            console.log("☁️ ซิงค์ Cloud สำเร็จ");
+            console.log("☁️ ข้อมูลถูกซิงค์ไปยัง Cloud เรียบร้อยแล้ว");
         } catch (e) {
             console.error("☁️ Sync Error:", e);
+            // ถ้าเน็ตหลุดตอนเซฟ ให้แจ้งเตือนผู้ใช้เล็กน้อย (ทาง Console)
         }
     }
 }

@@ -544,17 +544,41 @@ input:focus { border-color: var(--light-blue); outline: none; }
         padding: 10px 15px;
     }
 }
-@media (max-width: 480px) { /* มือถือ */
-    .modern-modal {
-        max-width: 95%;
-        border-radius: 20px;
+@media (max-width: 480px) {
+    #view-title { font-size: 1.1rem !important; }
+    .header-container { padding: 5px 10px; }
+    .header-action-group { gap: 5px; }
+    
+    .btn-header-list { 
+        min-width: 60px !important; 
+        font-size: 0.8rem !important; 
+        padding: 4px 8px !important;
     }
-    .modal-body { padding: 20px 15px; }
-    .btn-confirm-modern, .btn-cancel-modern { 
-        padding: 15px; 
-        font-size: 1.2rem; 
+
+    .grid-container { grid-template-columns: 1fr; } /* โชว์การ์ดงวด 1 คอลัมน์ */
+    
+    .modern-modal { width: 95%; }
+    .big-input { font-size: 2rem !important; }
+    
+    .action-bar-top { flex-direction: row; gap: 8px; }
+    .pill-btn { font-size: 0.8rem; padding: 10px; }
+}
+@media (min-width: 481px) and (max-width: 1024px) {
+    .container { width: 92%; }
+    .grid-container { grid-template-columns: 1fr 1fr; } /* โชว์การ์ดงวด 2 คอลัมน์ */
+    
+    #view-title { font-size: 1.3rem; }
+    .btn-header-list { min-width: 90px !important; }
+
+    .modern-modal { max-width: 450px; }
+    
+    /* ปรับปรุงหน้าสรุปยอดให้ดูง่ายขึ้นในไอแพด */
+    #report-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
     }
-    .modal-header h2 { font-size: 1.3rem; }
+    #search-box-wrap, .profit-summary-grid { grid-column: span 2; }
 }
 @media (max-width: 600px) {
     /* มือถือ */
@@ -688,6 +712,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
 }
 /* หน้าจอคอมพิวเตอร์ Desktop */
 @media (min-width: 1025px) {
+    .container { width: 1000px; }
     .header-container { max-width: 1000px; }
     .btn-header-list { 
         min-width: 100px !important; 
@@ -706,9 +731,17 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .grid-container {
         grid-template-columns: 1fr 1fr 1fr; /* แสดง 3 คอลัมน์ */
     }
+    .inst-card { transition: 0.3s; }
+    .inst-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
     .modal-content, .modern-modal {
         max-width: 450px;
     }
+    #report-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    #search-box-wrap, .profit-summary-grid, #profit-analysis-controls { grid-column: span 2; }
 }
 
 
