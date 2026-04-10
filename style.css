@@ -1017,27 +1017,3 @@ input:focus { border-color: var(--light-blue); outline: none; }
     background: #f8f8f8;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-/* ปรับแต่งการ์ดผู้ชนะให้ดูง่ายในแบบเรียงเดี่ยว */
-.winner-item {
-    border-left: 8px solid #f1c40f; /* แถบสีทองหนาขึ้น */
-    background: #fffdf2; /* พื้นหลังสีเหลืองจางๆ ให้รู้ว่าถูกรางวัล */
-    margin-bottom: 12px;
-    padding: 18px 20px;
-    border-radius: 15px;
-    box-shadow: 0 4px 10px rgba(241, 196, 15, 0.1);
-    display: block; /* บังคับเรียงแถวเดี่ยว */
-    width: 100%;
-}
-
-.winner-item .person-row {
-    align-items: center; /* จัดชื่อและยอดเงินให้อยู่กึ่งกลางแนวเดียวกัน */
-}
-
-/* เพิ่มเส้นคั่นระหว่างหมวดเลขให้ชัดเจน */
-#report-content h4 {
-    margin-top: 30px;
-    margin-bottom: 15px;
-    padding-left: 10px;
-    border-left: 4px solid var(--navy);
-    color: var(--navy);
-}
