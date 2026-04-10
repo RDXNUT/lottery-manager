@@ -38,6 +38,10 @@ function initApp() {
         const badge = document.querySelector('.demo-badge');
         const loginBtn = document.getElementById('login-nav-btn');
 
+        // ทุกครั้งที่สถานะเปลี่ยน (ล็อกอินหรือสลับบัญชี) ให้ล้างค่าในหน้าจอก่อน
+        installments = []; 
+        renderInstallments();
+
         if (user) {
             currentUser = user;
             loginBtn.innerText = user.displayName;
@@ -45,16 +49,18 @@ function initApp() {
             badge.innerText = "☁️ คลาวด์ซิงค์";
             badge.style.color = "#2ecc71";
             
-            // เมื่อล็อกอิน หรือ รีเฟรชหน้าจอ ให้โหลดข้อมูลจาก Cloud ทันที
+            // โหลดข้อมูลใหม่ของบัญชีนี้เท่านั้น
+            isCloudDataLoaded = false; // บล็อกการเซฟจนกว่าจะโหลดเสร็จ
             await loadDataFromCloud();
         } else {
             currentUser = null;
-            isCloudDataLoaded = true; // ถ้าไม่ได้ล็อกอิน ให้ยอมให้เซฟลงเครื่องได้เลย
+            isCloudDataLoaded = true; 
             loginBtn.innerText = "เข้าสู่ระบบ";
             loginBtn.onclick = () => openLoginModal(); 
 
             badge.innerText = "โหมดทดลองใช้";
             badge.style.color = "rgba(255,255,255,0.7)";
+            // ดึงข้อมูล LocalStorage (ถ้ามี) สำหรับคนไม่ล็อกอิน
             installments = JSON.parse(localStorage.getItem('data_v1')) || [];
             renderInstallments();
         }
@@ -74,6 +80,16 @@ function askLogout() {
 window.executeLogout = function() {
     window.fbMethods.signOut(window.fbAuth).then(() => {
         console.log("Logged Out");
+        
+        // --- ล้างข้อมูลทุกอย่างออกจากเครื่องทันที ---
+        currentUser = null;
+        installments = []; // ล้างอาเรย์ข้อมูล
+        localStorage.removeItem('data_v1'); // ลบข้อมูลที่เซฟค้างในเครื่อง
+        isCloudDataLoaded = false;
+        
+        // วาดหน้าจอใหม่ (จะกลายเป็นหน้าว่างสำหรับโหมดทดลอง)
+        renderInstallments();
+        
         closeLogoutModal();
     });
 }
@@ -86,26 +102,27 @@ window.closeLogoutModal = function() {
 async function loadDataFromCloud() {
     if (!currentUser) return;
     const dbRef = window.fbMethods.ref(window.fbDb);
+    
     try {
         const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}`));
+        
         if (snapshot.exists()) {
             const data = snapshot.val().installments;
+            // ดึงข้อมูลของบัญชีนี้มาใส่
             installments = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-            console.log("✅ โหลดข้อมูลจาก Cloud สำเร็จ");
+            console.log("✅ โหลดข้อมูลของบัญชี:", currentUser.displayName);
         } else {
-            // ถ้าใน Cloud ว่างเปล่า แต่ในเครื่องมีข้อมูล ให้ใช้ข้อมูลในเครื่องไปก่อน
-            console.log("ℹ️ ไม่พบข้อมูลใน Cloud, ใช้ข้อมูลจาก LocalStorage");
-            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
-            // และสั่งเซฟขึ้น Cloud ทันทีเพื่อให้ข้อมูลเริ่มต้นซิงค์
-            isCloudDataLoaded = true;
-            await saveData();
+            // บัญชีใหม่แกะกล่อง ไม่มีข้อมูลใน Cloud
+            console.log("🆕 บัญชีใหม่: เริ่มต้นจากศูนย์");
+            installments = []; // บังคับให้เป็นว่างเปล่า
+            localStorage.removeItem('data_v1'); // ล้างของเก่าที่อาจค้างจากคนอื่น
         }
         
         isCloudDataLoaded = true; 
         renderInstallments();
     } catch (error) {
         console.error("❌ Load Error", error);
-        isCloudDataLoaded = true; // ป้องกันแอปค้างเพื่อให้ยังใช้งานต่อได้
+        isCloudDataLoaded = true;
     }
 }
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
