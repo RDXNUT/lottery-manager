@@ -1,0 +1,856 @@
+@import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&display=swap');
+
+:root {
+    --dark-blue: #001f3f;
+    --navy: #003366;
+    --green: #2ecc71;
+    --yellow: #f1c40f;
+    --red: #e74c3c;
+    --light-blue: #3498db;
+    --white: #ffffff;
+    --gray: #f4f4f4;
+    --shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+
+/* --- 2. BASE STYLES --- */
+* { 
+    box-sizing: border-box; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+}
+body {
+    background-color: var(--gray);
+    margin: 0;
+    padding-bottom: 50px;
+    color: #333;
+    overflow-x: hidden;
+}
+header {
+    background-color: var(--dark-blue);
+    color: white;
+    padding: 15px 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    min-height: 50px; 
+}
+#view-title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+.container {
+    width: 95%;
+    max-width: 1000px; 
+    margin: 20px auto;
+}
+
+/* --- 3. HEADER BUTTONS (ปุ่ม รายชื่อ/สรุปยอด) --- */
+.header-action-group {
+    display: flex;
+    gap: 10px;
+}
+.btn-header-list {
+    /* ทรงมนรี (Pill) */
+    border-radius: 50px !important;
+    
+    /* ขนาด: กะทัดรัดกว่าปุ่มหน้าหลัก */
+    width: auto !important;          
+    min-width: 85px !important;      
+    padding: 6px 18px !important;    
+    height: 38px !important;         
+    
+    /* การจัดวาง: ห้ามขยายตัว (Flex None) */
+    flex: none !important;           
+    display: none; 
+    align-items: center;
+    justify-content: center;
+    
+    /* สีและความสวยงาม (Glass Effect) */
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1.2px solid rgba(255, 255, 255, 0.5) !important;
+    color: white !important;
+    font-size: 0.95rem !important;   
+    font-weight: 500 !important;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    
+    /* ระยะห่างจากชื่อวันที่ */
+    margin-left: auto; 
+}
+.btn-header-list:hover {
+    transform: translateY(-3px) scale(1.05); /* ปุ่มจะขยายและลอยขึ้นเล็กน้อย */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+}
+#report-btn {
+    background: #27ae60 !important; /* สีเขียวเข้มสว่าง */
+    color: white !important;
+    border-color: #2ecc71 !important; /* ขอบสีเขียวอ่อน */
+}
+
+
+/* --- 4. DASHBOARD & CARDS --- */
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+.inst-card {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    border-left: 8px solid var(--navy);
+    cursor: pointer;
+}
+.inst-card:hover { transform: scale(1.02); }
+.inst-card h3 { 
+    margin: 0 0 15px 0; 
+    font-size: 1.5rem; 
+    color: var(--navy); 
+}
+.btn-create-dashed {
+    width: 100%;
+    padding: 20px;
+    border: 3px dashed #ccc;
+    background: transparent;
+    border-radius: 15px;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.3s;
+}
+.btn-create-dashed:hover { border-color: var(--navy); color: var(--navy); }
+
+
+/* --- 5. INPUT FORM & ELEMENTS --- */
+.input-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+}
+.input-group { 
+    margin-bottom: 20px; 
+}
+.input-group label { 
+    display: block; 
+    font-weight: bold; 
+    margin-bottom: 8px; 
+    font-size: 1.2rem; 
+}
+input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1.3rem;
+}
+input:focus { border-color: var(--light-blue); outline: none; }
+.big-input {
+    font-size: 2.5rem !important;
+    font-weight: bold;
+    text-align: center;
+    color: var(--navy);
+}
+.type-selector {
+    display: flex;
+    gap: 10px;
+}
+.type-btn {
+    flex: 1;
+    padding: 15px;
+    font-size: 1.2rem;
+    border: 2px solid var(--navy);
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.type-btn.active {
+    background: var(--navy);
+    color: white;
+}
+.btn-save {
+    width: 100%;
+    padding: 20px;
+    background-color: var(--green);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 15px;
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
+}
+
+
+/* --- 6. PROGRESS BAR --- */
+.progress-section { margin-bottom: 25px; }
+.label-group { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 5px; font-size: 1.1rem; }
+.progress-bar-bg {
+    background: #e0e0e0;
+    height: 25px;
+    border-radius: 50px;
+    overflow: hidden;
+    border: 1px solid #ddd;
+}
+.progress-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+.bg-green { background-color: var(--green); }
+.bg-yellow { background-color: var(--yellow); }
+.bg-red { background-color: var(--red); }
+.bg-blue { background-color: var(--light-blue); }
+
+
+/* --- 7. ACTION BARS (กลับหน้าหลัก/ลบงวด) --- */
+.action-bar-top {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.pill-btn {
+    flex: 1; /* ทำให้ทั้ง 2 ปุ่มกว้างเท่ากัน */
+    padding: 12px 20px;
+    border-radius: 50px; /* ทรงมนรี */
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.btn-back-modern {
+    background-color: var(--navy);
+    color: white;
+}
+.btn-back {
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+.btn-back-modern:hover { background-color: var(--dark-blue); }
+.btn-delete-installment {
+    background-color: #fff;
+    color: var(--red);
+    border: 2px solid var(--red);
+}
+
+
+/* --- 8. LIST ITEMS (รายการล่าสุด) --- */
+.entry-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    min-height: 75px;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.entry-item .info { font-size: 1.4rem; font-weight: bold; }
+.btn-delete {
+    color: var(--red);
+    border: 2px solid #ffcccc;
+    background: #fff5f5;
+    width: 55px;     
+    height: 55px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    flex-shrink: 0;  
+    box-shadow: 0 2px 5px rgba(231, 76, 60, 0.1);
+}
+.btn-delete:hover {
+    background: var(--red);
+    color: white;
+    border-color: var(--red);
+    transform: scale(1.05);
+}
+.btn-delete svg {
+    display: block;
+}
+.btn-delete-installment:hover { background-color: var(--red); color: white; }
+.btn-delete-installment {
+    background-color: #fff !important;
+    color: var(--red) !important;
+    border: 2px solid var(--red) !important;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.1) !important;
+}
+
+/* --- 9. MODALS (ดีไซน์ใหม่ทั้งหมด) --- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px);
+}
+
+.modern-modal {
+    background: white;
+    margin: 10% auto;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 25px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+.modal-shadow {
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    border: none;
+    overflow: hidden;
+    padding: 0 !important; /* ลบ padding เดิมออก */
+}
+
+.modal-header {
+    background: var(--dark-blue);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-align: center; /* จัดตัวหนังสือให้อยู่กึ่งกลาง */
+    width: 100%;
+}
+.modal-body {
+    padding: 25px;
+}
+.modern-input {
+    border: 2px solid #e0e0e0 !important;
+    border-radius: 15px !important;
+    padding: 15px !important;
+    font-size: 1.2rem !important;
+    transition: all 0.3s;
+    background: #f9f9f9;
+}
+.modern-input:focus {
+    border-color: var(--light-blue) !important;
+    background: white;
+    outline: none;
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.2);
+}
+.modal-actions-container {
+    display: flex;
+    flex-direction: column; /* เรียงลงมาเพื่อให้ปุ่มกว้างเท่ากันเต็มพื้นที่ */
+    gap: 12px;
+}
+.btn-confirm-modern, .btn-cancel-modern {
+    width: 100%;
+    padding: 18px; /* ขนาดใหญ่พิเศษกดง่าย */
+    border-radius: 18px;
+    border: none;
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.3s;
+}
+.btn-confirm-modern {
+    background: var(--green);
+    color: white;
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+.btn-confirm-modern:active { transform: scale(0.96); }
+.btn-cancel {
+    width: 100%;
+    padding: 15px;
+    background: #ccc;
+    border: none;
+    border-radius: 10px;
+    margin-top: 10px;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.btn-cancel-modern {
+    background: #e0e0e0;
+    color: #666;
+}
+.btn-cancel-modern:hover { background: #d0d0d0; }
+.modern-delete-body .btn-cancel-modern {
+    width: 100%;
+    padding: 18px;
+    margin-top: 0;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 15px;
+    overflow: hidden;
+}
+#customer-modal .modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+#alert-modal .modal-content {
+    animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+
+/* --- 10. REPORT & PROFIT ANALYSIS --- */
+.tab-container {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    background: #e0e0e0;
+    padding: 5px;
+    border-radius: 12px;
+}
+.tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    transition: 0.3s;
+}
+.tab-btn.active {
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    color: var(--navy);
+}
+.report-card {
+    background: white;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.profit-summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.summary-box {
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+.summary-box.net-profit { grid-column: span 2; }
+.summary-box h4 { margin: 0; font-size: 0.9rem; color: #666; }
+.summary-box p { margin: 5px 0 0 0; font-size: 1.4rem; font-weight: 700; }
+.btn-toggle-pay {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 10px;
+}
+.btn-status-unpaid { background-color: #2ecc71; color: white; } /* สีเขียว - จ่ายเงิน */
+.btn-status-paid { background-color: #e0e0e0; color: #7f8c8d; }   /* สีเทา - จ่ายเงินแล้ว */
+
+
+/* --- 11. RESPONSIVE DESIGN --- */
+
+/* มือถือขนาดเล็ก */
+@media (max-width: 400px) {
+    #view-title { font-size: 1.1rem; }
+    .btn-header-list { 
+        min-width: 65px !important; 
+        padding: 4px 10px !important;
+        font-size: 0.75rem !important;
+    }
+}
+@media (max-width: 450px) {
+    .pill-btn {
+        font-size: 0.9rem;
+        padding: 10px 15px;
+    }
+}
+@media (max-width: 600px) {
+    /* มือถือ */
+    .container { padding: 10px; }
+    header h1 { font-size: 1.2rem; }
+    .big-input { font-size: 1.8rem !important; }
+    .inst-card h3 { font-size: 1.2rem; }
+    .btn-save { font-size: 1.4rem; }
+    .modal-body div[style*="display: flex"] {
+        flex-direction: column; /* มือถือให้เรียงลงมา */
+        gap: 0 !important;
+    }
+    .num-title { font-size: 1.3rem; }
+    .tab-btn { font-size: 0.85rem; }
+    .btn-header-list {
+        padding: 10px 20px !important;
+        font-size: 1rem !important;
+        height: 45px !important;
+        min-width: 100px !important;
+    }
+    .header-container h1 {
+        font-size: 1.4rem !important; /* ย่อชื่อวันที่ลงนิหนึ่งเพื่อให้ปุ่มไม่เบียดกัน */
+    }
+    .modal-body .input-group {
+        margin-bottom: 10px;
+    }
+    .flex-mobile {
+        flex-direction: column;
+        gap: 0;
+    }
+    .flex-container-modal {
+        flex-direction: column;
+        gap: 0;
+    }
+    .flex-row-modal {
+        flex-direction: column;
+        gap: 0;
+    }
+    .modal-content {
+        margin: 5% auto;
+        width: 95%;    
+    }
+    .modern-modal {
+        width: 95%;
+        margin: 10% auto;
+    }
+    .demo-badge { display: none; } /* ซ่อนคำว่าโหมดทดลองในมือถือเพื่อประหยัดพื้นที่ */
+    .btn-login-outline { font-size: 0.8rem; padding: 4px 10px; }
+    .header-action-group { gap: 8px; }
+}
+
+/* แท็บเล็ต / iPad */
+@media (min-width: 601px) and (max-width: 1024px) {
+    .header-container { padding: 0 20px; }
+    .btn-header-list { 
+        min-width: 90px !important; 
+        font-size: 0.95rem !important; 
+        height: 40px !important;
+    }
+}
+@media (min-width: 768px) {
+    #installment-list {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    .input-card {
+        padding: 30px;
+    }
+}
+@media (min-width: 1024px) {
+    #report-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    #search-box-wrap { grid-column: span 2; }
+    .google-btn { padding: 15px; }
+}
+/* หน้าจอคอมพิวเตอร์ Desktop */
+@media (min-width: 1025px) {
+    .header-container { max-width: 900px; }
+    .btn-header-list { 
+        min-width: 100px !important; 
+        padding: 8px 20px !important;
+        transition: 0.3s ease;
+    }
+    .btn-header-list:hover {
+        background: white !important;
+        color: var(--dark-blue) !important;
+        transform: translateY(-2px);
+    }
+}
+
+
+/* Card Styling */
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+.icon-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+}
+.close { float: right; font-size: 2rem; cursor: pointer; }
+* { 
+    font-family: 'Prompt', sans-serif !important; 
+}
+.label-modern {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 10px !important;
+    display: block;
+    border: none !important; /* มั่นใจว่าไม่มีเส้นขอบ */
+    padding: 0 !important;
+}
+.big-input-styled {
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    width: 100%;
+    font-size: 1.2rem;
+    margin-top: 10px;
+}
+
+/* ปรับ Header Icon ให้ชัดเจน */
+#user-list-btn {
+    background: rgba(255,255,255,0.2);
+    color: white !important;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+}
+
+/* ทำให้ Progress Bar ดูมีมิติขึ้น */
+.progress-bar-bg {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
+}
+/* เพิ่มสีพื้นหลังให้อินพุตที่เน้นลิมิต */
+#new-inst-max-total, #new-inst-max-person {
+    background-color: #f0f7ff;
+    border-color: var(--light-blue);
+}
+
+
+.flex-mobile {
+    display: flex;
+    gap: 10px;
+}
+.flex-container-modal {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+.flex-1 {
+    flex: 1;
+}
+
+/* เพิ่มสีข้อความสำหรับยอดที่เกิน */
+.status-red-text {
+    color: var(--red);
+}
+
+.text-center { text-align: center; }
+
+/* จัดการแถวของช่องกรอกเงิน */
+.flex-row-modal {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+
+
+@keyframes popIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+#alert-modal .btn-confirm-modern {
+    background-color: var(--navy); /* ใช้สีน้ำเงินเข้มให้ดูเป็นทางการ */
+}
+
+.pill-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+}
+
+/* ปุ่ม "รายชื่อ" ใน Header ให้หรูหรา */
+#user-list-btn:hover { background: white !important; color: #001f3f !important; }
+
+/* จัดการตำแหน่งไอคอน SVG ในปุ่ม */
+.pill-btn svg {
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+/* คุมขนาด Action Bar ให้พอดีหน้าจอ */
+.action-bar-top {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+
+/* ตกแต่งเนื้อหาในหน้าต่างลบ */
+.modern-delete-body {
+    text-align: center;
+    padding: 30px 25px !important;
+}
+
+.delete-warning-text {
+    font-size: 1.2rem;
+    color: #555;
+    margin-bottom: 15px;
+}
+
+/* กล่องรายละเอียดรายการที่จะลบ */
+.delete-detail-box {
+    background: #fff5f5;
+    padding: 20px;
+    border-radius: 18px;
+    border: 2px dashed #ffcccc;
+    color: var(--red);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 30px;
+    line-height: 1.4;
+}
+
+/* ปรับปรุงปุ่มลบให้ดูหรูและขนาดเท่าปุ่มยกเลิก */
+.btn-confirm-delete-modern {
+    width: 100%;
+    padding: 18px;
+    border-radius: 18px;
+    border: none;
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: var(--red);
+    color: white;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+    transition: all 0.2s;
+    margin-bottom: 12px; /* ระยะห่างระหว่างปุ่ม */
+}
+.btn-confirm-delete-modern:active {
+    transform: scale(0.96);
+}
+.search-container { margin-bottom: 15px; }
+.search-container input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+}
+.num-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+.num-title { font-size: 1.6rem; font-weight: 700; color: var(--navy); }
+.subtotal-text { font-size: 1.2rem; font-weight: 600; }
+.person-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 1.1rem;
+}
+.payout-item {
+    border-left: 5px solid var(--light-blue);
+    padding-left: 15px;
+}
+.btn-report-style {
+    background: rgba(46, 204, 113, 0.3) !important; /* สีเขียวโปร่งแสง */
+    border-color: rgba(46, 204, 113, 0.6) !important;
+}
+.text-profit { color: #27ae60; }
+.text-loss { color: #e74c3c; }
+
+/* รายชื่อผู้โชคดี */
+.winner-item {
+    border-left: 5px solid #f1c40f;
+    margin-bottom: 10px;
+}
+/* โหมดทดลองใช้ และปุ่ม Login */
+.demo-badge {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    align-self: center;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 2px 10px;
+    border-radius: 20px;
+}
+
+.btn-login-outline {
+    background: transparent;
+    color: white;
+    border: 1.5px solid var(--green);
+    padding: 6px 15px;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-login-outline:hover {
+    background: var(--green);
+    transform: translateY(-2px);
+}
+
+/* ปุ่ม Google Login */
+.google-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #444;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.google-btn img {
+    width: 24px;
+    height: 24px;
+}
+
+.google-btn:hover {
+    background: #f8f8f8;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}

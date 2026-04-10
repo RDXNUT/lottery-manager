@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการยอดงวด</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- ส่วนหัวหน้าจอ -->
+    <header>
+        <div class="header-container">
+            <!-- ชื่อวันที่ด้านซ้าย -->
+            <h1 id="view-title">รายการงวดทั้งหมด</h1>
+            
+            <!-- 1.1 เพิ่มใน header-action-group -->
+            <div class="header-action-group">
+                <span class="demo-badge">โหมดทดลองใช้</span>
+                <button id="login-nav-btn" class="btn-login-outline" onclick="openLoginModal()">เข้าสู่ระบบ</button>
+                
+                <!-- ปุ่มเดิมที่มีอยู่แล้ว (JS จะควบคุมการโชว์/ซ่อน) -->
+                <button id="user-list-btn" class="btn-header-list" onclick="openCustomerModal()" style="display: none;">รายชื่อ</button>
+                <button id="report-btn" class="btn-header-list" onclick="openReportView()" style="display: none;">สรุปยอด</button>
+            </div>
+
+            <!-- 1.2 เพิ่ม Modal ล็อกอิน (วางไว้ก่อน <script src="script.js"></script>) -->
+            <div id="login-modal" class="modal">
+                <div class="modal-content modal-shadow modern-modal" style="max-width: 380px;">
+                    <div class="modal-header">
+                        <h2>เข้าสู่ระบบ</h2>
+                    </div>
+                    <div class="modal-body" style="text-align: center; padding: 40px 20px;">
+                        <p style="margin-bottom: 30px; color: #666;">กรุณาลงชื่อเข้าใช้เพื่อบันทึกข้อมูลของคุณอย่างปลอดภัย</p>
+                        
+                        <button class="google-btn" onclick="handleGoogleLogin()">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google Logo">
+                            ลงชื่อเข้าใช้ด้วย Google
+                        </button>
+
+                        <button class="btn-cancel-modern" onclick="closeLoginModal()" style="margin-top: 20px;">ไว้ทีหลัง</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- หน้าแรก: Dashboard งวด -->
+        <section id="dashboard-view">
+            <div id="installment-list" class="grid-container">
+                <!-- การ์ดงวดจะมาโผล่ตรงนี้ -->
+            </div>
+            <button class="btn-create-dashed" onclick="createNewInstallment()">
+                <i class="fas fa-plus"></i> เพิ่มงวดใหม่
+            </button>
+        </section>
+
+        <!-- หน้าที่สอง: ระบบคีย์ข้อมูล -->
+        <section id="input-view" style="display: none;">
+            <!-- ส่วนปุ่มควบคุมด้านบน (เพิ่มใหม่) -->
+            <div class="action-bar-top">
+                <button onclick="backToDashboard()" class="pill-btn btn-back-modern">
+                    <!-- ไอคอนย้อนกลับ SVG -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>
+                    กลับหน้าหลัก
+                </button>
+                <button onclick="askDeleteInstallment()" class="pill-btn btn-delete-installment">
+                    <!-- ไอคอนถังขยะ SVG (คมชัดแน่นอน) -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    ลบงวดนี้
+                </button>
+            </div>
+            
+            <!-- Progress Bar รวมด้านบน -->
+            <div class="progress-section">
+                <div class="label-group">
+                    <span>ยอดรวมทั้งงวด</span>
+                    <span id="total-progress-text">0 / 100,000</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="main-progress-fill" class="progress-fill bg-green" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- ฟอร์มกรอกข้อมูล -->
+            <div class="input-card">
+                <div class="input-group">
+                    <label>ชื่อลูกค้า</label>
+                    <input type="text" id="cust-name" placeholder="พิมพ์ชื่อ..." list="name-list">
+                    <datalist id="name-list"></datalist>
+                </div>
+
+                <div class="input-group">
+                    <label>ประเภทเลข</label>
+                    <div class="type-selector">
+                        <button class="type-btn active" onclick="setType(2)">2 หลัก</button>
+                        <button class="type-btn" onclick="setType(3)">3 หลัก</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>ตัวเลข</label>
+                    <input type="number" id="input-number" class="big-input" placeholder="00" oninput="limitDigits(this)">
+                </div>
+
+                <div class="input-group">
+                    <label>จำนวนเงิน (บาท)</label>
+                    <input type="number" id="input-amount" class="big-input" placeholder="0.00">
+                </div>
+
+                <button class="btn-save" onclick="saveEntry()">บันทึกข้อมูล</button>
+            </div>
+
+            <!-- ตารางรายการล่าสุด -->
+            <div class="history-section">
+                <h3>รายการทั้งหมด</h3>
+                <div id="recent-entries"></div>
+            </div>
+        </section> 
+        
+        <!-- ส่วนหน้าจอสรุปรายงาน -->
+        <section id="report-view" style="display: none;">
+            <div class="action-bar-top">
+                <button onclick="backToInput()" class="pill-btn btn-back-modern">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"></path></svg>
+                    กลับหน้าคีย์
+                </button>
+                <button onclick="copyToClipboard()" class="pill-btn" style="background:#27ae60; color:white;">
+                    คัดลอกส่ง LINE
+                </button>
+            </div>
+
+            <!-- Tab สลับโหมดการดู -->
+            <div class="tab-container">
+                <button class="tab-btn active" onclick="switchTab('number')">แยกตามเลข</button>
+                <button class="tab-btn" onclick="switchTab('person')">ยอดเก็บเงิน</button>
+                <button class="tab-btn" onclick="switchTab('profit')">วิเคราะห์กำไร</button>
+            </div>
+
+            <!-- ช่องค้นหาเลข -->
+            <div class="search-container" id="search-box-wrap">
+                <input type="number" id="search-number" placeholder="🔍 ค้นหาตัวเลข..." oninput="filterReport()">
+            </div>
+
+            <div id="profit-analysis-controls" style="display: none; margin-bottom: 20px;">
+                <div class="report-card" style="border-left: 8px solid var(--navy);">
+                    <h3 style="margin-top:0;">1. กรอกเลขที่ออก</h3>
+                    <div class="flex-row-modal" style="margin-bottom: 15px;">
+                        <div class="input-group flex-1">
+                            <label class="label-modern">เลข 3 ตัว</label>
+                            <input type="number" id="result-3-digit" class="modern-input text-center" placeholder="000" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3)">
+                        </div>
+                        <div class="input-group flex-1">
+                            <label class="label-modern">เลข 2 ตัว</label>
+                            <input type="number" id="result-2-digit" class="modern-input text-center" placeholder="00" oninput="if(this.value.length > 2) this.value = this.value.slice(0,2)">
+                        </div>
+                    </div>
+                    <button class="btn-confirm-modern" onclick="runAnalysis()" style="background: var(--navy);">
+                        คำนวณยอดจ่าย
+                    </button>
+                </div>
+            </div>
+
+            <div id="report-content">
+                <!-- เนื้อหาจะถูกสร้างจาก JS -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal รายชื่อลูกค้า -->
+    <div id="customer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCustomerModal()">&times;</span>
+            <h2>รายชื่อในงวดนี้</h2>
+            <div id="customer-summary-list"></div>
+        </div>
+    </div>
+
+    <!-- Modal รายละเอียดลูกค้ารายคน -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDetailModal()">&times;</span>
+            <h2 id="detail-name">ชื่อลูกค้า</h2>
+            <div id="detail-items"></div>
+            <hr>
+            <h3 id="detail-total">รวมทั้งหมด: 0.-</h3>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับเพิ่มงวดใหม่ -->
+    <div id="add-installment-modal" class="modal">
+        <div class="modal-content modal-shadow modern-modal">
+            <div class="modal-header">
+                <h2>สร้างงวดใหม่</h2>
+            </div>
+            <div class="modal-body">
+                <div class="input-group">
+                    <label class="label-modern">ระบุวันที่งวด</label>
+                    <input type="text" id="new-inst-date" placeholder="เช่น 16 เมษายน 2567" class="modern-input">
+                </div>
+                
+                <div class="flex-row-modal">
+                    <div class="input-group flex-1">
+                        <label class="label-modern">งบทั้งหมดงวดนี้ (บาท)</label>
+                        <input type="number" id="new-inst-max-total" value="100000" class="modern-input text-center">
+                    </div>
+
+                </div>
+
+                <div class="modal-actions-container">
+                    <button class="btn-confirm-modern" onclick="confirmCreateInstallment()">ตกลงสร้างงวด</button>
+                    <button class="btn-cancel-modern" onclick="closeAddModal()">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal สำหรับแจ้งเตือน -->
+    <div id="alert-modal" class="modal">
+        <div class="modal-content modal-shadow modern-modal" style="max-width: 380px;">
+            <div class="modal-header" style="background: var(--dark-blue);">
+                <h2 style="font-size: 1.4rem;">แจ้งเตือน</h2>
+            </div>
+            <div class="modal-body" style="text-align: center; padding: 30px 20px;">
+                <p id="alert-message" style="font-size: 1.2rem; margin-bottom: 25px; color: #333; font-weight: 500;"></p>
+                <button class="btn-confirm-modern" onclick="closeAlert()" style="padding: 12px;">ตกลง</button>
+            </div>
+        </div>
+    </div>
+        
+    <!-- Modal ยืนยันการลบ -->
+    <div id="delete-confirm-modal" class="modal">
+        <div class="modal-content modal-shadow modern-modal" style="max-width: 420px;">
+            <div class="modal-header" style="background: var(--red);">
+                <!-- ลบสี่เหลี่ยมออก เหลือแต่หัวข้อ -->
+                <h2>ยืนยันการลบ</h2>
+            </div>
+            <div class="modal-body modern-delete-body">
+                <p class="delete-warning-text">คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?</p>
+                
+                <!-- กล่องโชว์รายละเอียดที่จะลบให้ดูแพง -->
+                <div id="delete-detail" class="delete-detail-box"></div>
+                
+                <div class="modal-actions-container">
+                    <button class="btn-confirm-delete-modern" id="confirm-delete-btn">ลบข้อมูล</button>
+                    <button class="btn-cancel-modern" onclick="closeDeleteModal()">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Firebase Realtime Database SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+  const firebaseConfig = {
+            apiKey: "AIzaSyDhVtd0LW7cSeGx3iPGcxGKN03LEkgdcdI",
+            authDomain: "number1-8ca7a.firebaseapp.com",
+            databaseURL: "https://number1-8ca7a-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "number1-8ca7a",
+            storageBucket: "number1-8ca7a.firebasestorage.app",
+            messagingSenderId: "224286851966",
+            appId: "1:224286851966:web:626f1d23a3221127e089fc"
+        };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db = getDatabase(app);
+  const provider = new GoogleAuthProvider();
+
+  // ส่งค่าไปให้ script.js ใช้งาน
+  window.fbAuth = auth;
+  window.fbDb = db;
+  window.fbProvider = provider;
+  window.fbMethods = { signInWithPopup, onAuthStateChanged, signOut, ref, set, get, child };
+</script>
+</body>
+</html>
