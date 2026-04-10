@@ -35,21 +35,22 @@ function initApp() {
     }
 
     window.fbMethods.onAuthStateChanged(window.fbAuth, async (user) => {
-        const badge = document.querySelector('.demo-badge');
-        const loginBtn = document.getElementById('login-nav-btn');
-
-        // ทุกครั้งที่สถานะเปลี่ยน (ล็อกอินหรือสลับบัญชี) ให้ล้างค่าในหน้าจอก่อน
+        // ทุกครั้งที่เปลี่ยนสถานะ (Login/Logout/Switch) ให้ล้างข้อมูลในเครื่องทิ้งทันที
         installments = []; 
-        renderInstallments();
+        isCloudDataLoaded = false; // ปิดสถานะโหลดชั่วคราวเพื่อรอข้อมูลใหม่
+        renderInstallments(); // วาดหน้าจอว่างรอไว้ก่อน
+
+        const loginBtn = document.getElementById('login-nav-btn');
+        const badge = document.querySelector('.demo-badge');
 
         if (user) {
             currentUser = user;
-            loginBtn.innerText = user.displayName;
+            loginBtn.innerText = user.displayName || "ผู้ใช้งาน";
             loginBtn.onclick = () => askLogout(); 
             badge.innerText = "☁️ คลาวด์ซิงค์";
             badge.style.color = "#2ecc71";
 
-            await loadDataFromCloud();
+            await loadDataFromCloud(); // โหลดข้อมูลเฉพาะของบัญชีที่ล็อกอินเข้ามาใหม่
         } else {
             currentUser = null;
             isCloudDataLoaded = true; 
@@ -58,12 +59,14 @@ function initApp() {
 
             badge.innerText = "โหมดทดลองใช้";
             badge.style.color = "rgba(255,255,255,0.7)";
-            // ดึงข้อมูล LocalStorage (ถ้ามี) สำหรับคนไม่ล็อกอิน
-            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+            
+            // ถ้าออกจากระบบแล้ว ให้ลองดูว่ามีข้อมูลโหมดทดลอง (Guest) ไหม
+            installments = JSON.parse(localStorage.getItem('data_guest')) || [];
             renderInstallments();
         }
     });
 }
+
 // เรียกใช้งาน
 initApp();
 
@@ -77,18 +80,17 @@ function askLogout() {
 // 2. ฟังก์ชันสั่งออกจากระบบจริงๆ (เรียกใช้เมื่อกดปุ่มในป๊อปอัพ)
 window.executeLogout = function() {
     window.fbMethods.signOut(window.fbAuth).then(() => {
-        console.log("Logged Out");
-        
-        // --- ล้างข้อมูลทุกอย่างออกจากเครื่องทันที ---
+        // ล้างตัวแปรใน JS
         currentUser = null;
-        installments = []; // ล้างอาเรย์ข้อมูล
-        localStorage.removeItem('data_v1'); // ลบข้อมูลที่เซฟค้างในเครื่อง
+        installments = [];
         isCloudDataLoaded = false;
         
-        // วาดหน้าจอใหม่ (จะกลายเป็นหน้าว่างสำหรับโหมดทดลอง)
-        renderInstallments();
+        // ไม่ต้องลบ data_guest เพราะเป็นของโหมดทดลองใช้ 
+        // แต่ข้อมูลบัญชีจะถูกดึงใหม่จาก Cloud เมื่อ Login บัญชีอื่น
         
+        renderInstallments();
         closeLogoutModal();
+        console.log("🚀 ออกจากระบบและล้างหน่วยความจำเรียบร้อย");
     });
 }
 // 3. ฟังก์ชันปิดป๊อปอัพออกจากระบบ
@@ -124,12 +126,8 @@ async function loadDataFromCloud() {
 }
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
 async function saveData() {
-    // 1. บันทึกลงเครื่อง (LocalStorage) กันเหนียวไว้ก่อน
-    localStorage.setItem('data_v1', JSON.stringify(installments));
-    console.log("💾 บันทึกลงเครื่องแล้ว");
-
-    // 2. ถ้าล็อกอินอยู่ และระบบพร้อมซิงค์ ให้ส่งขึ้น Firebase ทันที
     if (currentUser && isCloudDataLoaded) {
+        // 1. บันทึกลง Cloud (แยกตาม UID ของแต่ละคน)
         try {
             const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
             await window.fbMethods.set(userRef, { 
@@ -137,10 +135,14 @@ async function saveData() {
                 lastUpdate: Date.now(),
                 userName: currentUser.displayName
             });
-            console.log("☁️ ซิงค์ข้อมูลขึ้น Cloud เรียบร้อย");
+            console.log("☁️ ซิงค์ข้อมูลขึ้น Cloud ของบัญชีนี้แล้ว");
         } catch (e) {
-            console.error("☁️ Cloud Sync Error:", e);
+            console.error("☁️ Sync Error:", e);
         }
+    } else {
+        // 2. ถ้าไม่ได้ล็อกอิน ให้เซฟลง LocalStorage ในชื่อ "data_guest"
+        localStorage.setItem('data_guest', JSON.stringify(installments));
+        console.log("💾 บันทึกลงเครื่อง (โหมดทดลอง)");
     }
 }
 

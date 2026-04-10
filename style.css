@@ -104,8 +104,8 @@ header {
 /* --- 4. DASHBOARD & CARDS --- */
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* ปรับจำนวนคอลัมน์อัตโนมัติ */
-    gap: 20px;
+    grid-template-columns: 1fr;
+    gap: 15px;
 }
 .inst-card {
     background: white;
@@ -336,7 +336,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
     width: 100%;
     height: 100%;
     background-color: rgba(0,0,0,0.6);
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(8px);
     
     /* บังคับจัดกึ่งกลาง */
     align-items: center; 
@@ -355,13 +355,15 @@ input:focus { border-color: var(--light-blue); outline: none; }
 .modern-modal {
     background: white;
     width: 90%; /* สำหรับมือถือ */
+    max-height: 90vh;
     max-width: 400px; /* สำหรับคอมพิวเตอร์ */
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+    border-radius: 24px;
     
     /* ล้างค่า position ที่อาจทำให้เบี้ยว */
-    margin: 0 auto; 
+    margin: auto; 
     position: relative; 
     top: unset; 
     left: unset;
@@ -636,8 +638,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
         width: 100%;    
     }
     .modern-modal {
-        max-width: 100%;
-        border-radius: 20px;
+        max-width: 450px; /* ล็อกขนาด Modal ไม่ให้บานเต็มจอเกินไป */
     }
     .modal-content, .modern-modal {
         max-width: 95%; /* เกือบเต็มจอ */
@@ -658,7 +659,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .btn-login-outline { font-size: 0.8rem; padding: 4px 10px; }
     .header-action-group { gap: 8px; }
     .grid-container {
-        grid-template-columns: 1fr; /* แถวเดียวเต็มจอ */
+        grid-template-columns: repeat(2, 1fr); /* 2 คอลัมน์ */
     }
     #view-title { 
         font-size: 1rem !important; 
@@ -697,6 +698,12 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .input-card {
         padding: 30px;
     }
+     .action-bar-top {
+        gap: 20px;
+    }
+    .pill-btn {
+        max-width: 250px; /* ไม่ให้ปุ่มยาวจนน่าเกลียดในจอคอม */
+    }
 }
 @media (min-width: 1024px) {
     #report-content {
@@ -708,6 +715,16 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .google-btn { padding: 15px; }
     .modern-modal {
         max-width: 400px;
+    }
+    .grid-container {
+        grid-template-columns: repeat(3, 1fr); /* 3 คอลัมน์ */
+    }
+    .container {
+        width: 100%;
+        max-width: 1100px; /* ขยายพื้นที่แสดงผลให้กว้างขึ้นในจอใหญ่ */
+    }
+    header {
+        padding: 15px 40px;
     }
 }
 /* หน้าจอคอมพิวเตอร์ Desktop */
