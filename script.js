@@ -913,9 +913,8 @@ function generateWinnerCard(w, inst) {
 // ฟังก์ชันเสริมสำหรับแยกตามเลข 
 function renderNumberGroupedReport(inst, content) {
     const searchTerm = document.getElementById('search-number').value;
-    content.innerHTML = ''; // ล้างข้อมูลเดิมก่อนวาดใหม่
+    content.innerHTML = ''; 
 
-    // 1. กลุ่มข้อมูลตามเลข
     const grouped = inst.entries.reduce((acc, e) => {
         if (searchTerm && !e.number.includes(searchTerm)) return acc;
         if (!acc[e.number]) acc[e.number] = { items: [], total: 0 };
@@ -925,8 +924,6 @@ function renderNumberGroupedReport(inst, content) {
     }, {});
 
     const allKeys = Object.keys(grouped);
-
-    // 2. แยกกลุ่ม 2 หลัก และ 3 หลัก พร้อมเรียงลำดับจากน้อยไปมาก
     const group2 = allKeys.filter(k => k.length === 2).sort((a, b) => a.localeCompare(b));
     const group3 = allKeys.filter(k => k.length === 3).sort((a, b) => a.localeCompare(b));
 
@@ -935,7 +932,6 @@ function renderNumberGroupedReport(inst, content) {
         return;
     }
 
-    // 3. ฟังก์ชันช่วยวาดการ์ด
     const drawCards = (keys, title) => {
         if (keys.length > 0) {
             const header = document.createElement('h3');
@@ -952,22 +948,34 @@ function renderNumberGroupedReport(inst, content) {
                         <span class="num-title" style="font-size: 1.4rem;">เลข ${num}</span>
                         <b style="color:var(--navy); font-size:1.2rem;">รวม: ${data.total.toLocaleString()}.-</b>
                     </div>
-                    ${data.items.map(e => `
-                        <div class="person-row">
-                            <span style="font-size: 1rem;">
-                                <b>${e.name}</b> 
-                                ${e.number.length === 3 ? `<br><small style="color:#888;">(ตรง:${e.amountStraight} โต๊ด:${e.amountToad})</small>` : ''}
-                            </span> 
-                            <span style="font-weight: 600;">${e.amount.toLocaleString()}.-</span>
-                        </div>
-                    `).join('')}
+                    ${data.items.map(e => {
+                        // --- ส่วนที่แก้ไข: เพิ่มการคำนวณข้อความรายละเอียด (Detail Line) ---
+                        let detailLine = '';
+                        if (e.number.length === 3) {
+                            detailLine = `<br><small style="color:#888;">(ตรง:${e.amountStraight || 0} โต๊ด:${e.amountToad || 0})</small>`;
+                        } else if (e.number.length === 2) {
+                            let labels = [];
+                            if(e.amountUpper > 0) labels.push(`บน:${e.amountUpper}`);
+                            if(e.amountLower > 0) labels.push(`ล่าง:${e.amountLower}`);
+                            detailLine = `<br><small style="color:#888;">(${labels.join(' ')})</small>`;
+                        }
+
+                        return `
+                            <div class="person-row">
+                                <span style="font-size: 1rem;">
+                                    <b>${e.name}</b> 
+                                    ${detailLine}
+                                </span> 
+                                <span style="font-weight: 600;">${e.amount.toLocaleString()}.-</span>
+                            </div>
+                        `;
+                    }).join('')}
                 `;
                 content.appendChild(card);
             });
         }
     };
 
-    // 4. สั่งวาดหมวด 2 หลักก่อน แล้วตามด้วย 3 หลัก
     drawCards(group2, "📊 หมวดเลข 2 หลัก (00-99)");
     drawCards(group3, "📊 หมวดเลข 3 หลัก (000-999)");
 }
