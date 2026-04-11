@@ -827,14 +827,30 @@ function runAnalysis() {
         } 
         // --- เลข 3 หลัก ---
         else if (e.number.length === 3 && res3) {
+    
+            // 1. เช็คถูกรางวัล "ตรง"
+            // เงื่อนไข: เลขต้องตรงเป๊ะ และ มียอดเงินแทงตรง
             if (e.number === res3 && e.amountStraight > 0) {
                 let winAmount = e.amountStraight * 500;
-                winners3.push({ ...e, winAmount, winType: "3 ตัวตรง", displayAmount: e.amountStraight });
+                winners3.push({ 
+                    ...e, 
+                    winAmount, 
+                    winType: "3 ตัวตรง", 
+                    displayAmount: e.amountStraight 
+                });
                 totalPayout += winAmount;
             }
-            if (isToad(e.number, res3) && e.amountToad > 0) {
+
+            // 2. เช็คถูกรางวัล "โต๊ด" 
+            // เงื่อนไข: 1.สลับตำแหน่งได้ (isToad) 2.เลขต้อง "ไม่ตรงเป๊ะ" (e.number !== res3) 3.มียอดเงินแทงโต๊ด
+            if (isToad(e.number, res3) && e.number !== res3 && e.amountToad > 0) {
                 let winAmount = e.amountToad * 150;
-                winners3.push({ ...e, winAmount, winType: "3 ตัวโต๊ด", displayAmount: e.amountToad });
+                winners3.push({ 
+                    ...e, 
+                    winAmount, 
+                    winType: "3 ตัวโต๊ด", 
+                    displayAmount: e.amountToad 
+                });
                 totalPayout += winAmount;
             }
         }
