@@ -556,7 +556,16 @@ input:focus { border-color: var(--light-blue); outline: none; }
         font-size: 0.8rem !important; 
         padding: 4px 8px !important;
     }
-
+    .flex-row-modal {
+        flex-direction: row; /* ยังคงให้เรียงแนวนอนสำหรับ บน/ล่าง */
+        gap: 5px;
+    }
+    .flex-row-modal > div {
+        padding: 8px !important; /* ลด padding ลงเพื่อให้เห็นช่องกรอกชัดขึ้น */
+    }
+    .modern-input {
+        font-size: 1.1rem !important; /* ย่อขนาดตัวเลขในมือถือเล็กน้อย */
+    }
     .grid-container { grid-template-columns: 1fr; } /* โชว์การ์ดงวด 1 คอลัมน์ */
     
     .modern-modal { width: 95%; }
@@ -845,8 +854,8 @@ input:focus { border-color: var(--light-blue); outline: none; }
 /* จัดการแถวของช่องกรอกเงิน */
 .flex-row-modal {
     display: flex;
-    gap: 15px;
-    margin-bottom: 25px;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 

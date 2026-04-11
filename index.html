@@ -110,8 +110,20 @@
                 <div class="input-group" id="amount-area">
                     <label>จำนวนเงิน (บาท)</label>
                     
-                    <!-- สำหรับเลข 2 หลัก (แสดงปกติ) -->
-                    <input type="number" id="input-amount" class="big-input" placeholder="0.00">
+                    <!-- สำหรับเลข 2 หลัก: บน/ล่าง -->
+                    <div id="two-digit-options" style="margin-top: 10px;">
+                        <div class="flex-row-modal" style="gap: 10px; margin-bottom: 10px;">
+                            <div style="flex: 1; background: #f0f7ff; padding: 10px; border-radius: 10px; border: 1px solid #3498db;">
+                                <label style="font-size: 1rem;"><input type="checkbox" id="check-upper" checked> บน</label>
+                                <input type="number" id="amt-upper" class="modern-input" placeholder="0" style="font-size: 1.5rem !important;">
+                            </div>
+                            <div style="flex: 1; background: #fff5f5; padding: 10px; border-radius: 10px; border: 1px solid #e74c3c;">
+                                <label style="font-size: 1rem;"><input type="checkbox" id="check-lower"> ล่าง</label>
+                                <input type="number" id="amt-lower" class="modern-input" placeholder="0" style="font-size: 1.5rem !important;">
+                            </div>
+                        </div>
+                    </div>
+
 
                     <!-- สำหรับเลข 3 หลัก (ซ่อนไว้ก่อน จะแสดงเมื่อเลือก 3 หลัก) -->
                     <div id="three-digit-options" style="display: none; margin-top: 10px;">
@@ -165,14 +177,18 @@
             <div id="profit-analysis-controls" style="display: none; margin-bottom: 20px;">
                 <div class="report-card" style="border-left: 8px solid var(--navy);">
                     <h3 style="margin-top:0;">1. กรอกเลขที่ออก</h3>
-                    <div class="flex-row-modal" style="margin-bottom: 15px;">
-                        <div class="input-group flex-1">
-                            <label class="label-modern">เลข 3 ตัว</label>
+                    <div class="flex-row-modal" style="margin-bottom: 10px; flex-wrap: wrap;">
+                        <div class="input-group flex-1" style="min-width: 120px;">
+                            <label class="label-modern">3 ตัว</label>
                             <input type="number" id="result-3-digit" class="modern-input text-center" placeholder="000" oninput="if(this.value.length > 3) this.value = this.value.slice(0,3)">
                         </div>
-                        <div class="input-group flex-1">
-                            <label class="label-modern">เลข 2 ตัว</label>
-                            <input type="number" id="result-2-digit" class="modern-input text-center" placeholder="00" oninput="if(this.value.length > 2) this.value = this.value.slice(0,2)">
+                        <div class="input-group flex-1" style="min-width: 100px;">
+                            <label class="label-modern">2 ตัวบน</label>
+                            <input type="number" id="result-2-upper" class="modern-input text-center" placeholder="00" oninput="if(this.value.length > 2) this.value = this.value.slice(0,2)">
+                        </div>
+                        <div class="input-group flex-1" style="min-width: 100px;">
+                            <label class="label-modern">2 ตัวล่าง</label>
+                            <input type="number" id="result-2-lower" class="modern-input text-center" placeholder="00" oninput="if(this.value.length > 2) this.value = this.value.slice(0,2)">
                         </div>
                     </div>
                     <button class="btn-confirm-modern" onclick="runAnalysis()" style="background: var(--navy);">
@@ -293,27 +309,27 @@
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-  const firebaseConfig = {
-            apiKey: "AIzaSyDhVtd0LW7cSeGx3iPGcxGKN03LEkgdcdI",
-            authDomain: "number1-8ca7a.firebaseapp.com",
-            databaseURL: "https://number1-8ca7a-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "number1-8ca7a",
-            storageBucket: "number1-8ca7a.firebasestorage.app",
-            messagingSenderId: "224286851966",
-            appId: "1:224286851966:web:626f1d23a3221127e089fc"
-        };
+    const firebaseConfig = {
+                apiKey: "AIzaSyDhVtd0LW7cSeGx3iPGcxGKN03LEkgdcdI",
+                authDomain: "number1-8ca7a.firebaseapp.com",
+                databaseURL: "https://number1-8ca7a-default-rtdb.asia-southeast1.firebasedatabase.app",
+                projectId: "number1-8ca7a",
+                storageBucket: "number1-8ca7a.firebasestorage.app",
+                messagingSenderId: "224286851966",
+                appId: "1:224286851966:web:626f1d23a3221127e089fc"
+            };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth();
-  const db = getDatabase(app);
-  const provider = new GoogleAuthProvider();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getDatabase(app);
+    const provider = new GoogleAuthProvider();
 
-  // ส่งค่าไปให้ script.js ใช้งาน
-  window.fbAuth = auth;
-  window.fbDb = db;
-  window.fbProvider = provider;
-  window.fbMethods = { signInWithPopup, onAuthStateChanged, signOut, ref, set, get, child };
-</script>
+    // ส่งค่าไปให้ script.js ใช้งาน
+    window.fbAuth = auth;
+    window.fbDb = db;
+    window.fbProvider = provider;
+    window.fbMethods = { signInWithPopup, onAuthStateChanged, signOut, ref, set, get, child };
+    </script>
 
 <script src="script.js" defer></script>  
 </body>

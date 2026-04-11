@@ -315,9 +315,13 @@ function openInstallment(id) {
     document.getElementById('dashboard-view').style.display = 'none';
     document.getElementById('input-view').style.display = 'block';
     
-    // แสดงปุ่ม "รายชื่อ" และ "สรุปยอด" แบบ Flex
+    // โชว์ปุ่มจัดการงวด
     document.getElementById('user-list-btn').style.display = 'flex';
     document.getElementById('report-btn').style.display = 'flex';
+
+    // --- ส่วนที่เพิ่มใหม่: ซ่อนปุ่มเข้าสู่ระบบและ badge ---
+    document.querySelector('.demo-badge').style.display = 'none';
+    document.getElementById('login-nav-btn').style.display = 'none';
     
     updateUI();
     updateNameList();
@@ -326,14 +330,16 @@ function openInstallment(id) {
 function backToDashboard() {
     document.getElementById('view-title').innerText = "รายการงวดทั้งหมด";
     
-    // สลับหน้าจอ
     document.getElementById('dashboard-view').style.display = 'block';
     document.getElementById('input-view').style.display = 'none';
     document.getElementById('report-view').style.display = 'none';
     
-    // สั่งซ่อนปุ่มใน Header
     document.getElementById('user-list-btn').style.display = 'none';
     document.getElementById('report-btn').style.display = 'none';
+
+    // --- ส่วนที่เพิ่มใหม่: เอากลับมาโชว์เมื่ออยู่หน้าแรก ---
+    document.querySelector('.demo-badge').style.display = 'inline-block';
+    document.getElementById('login-nav-btn').style.display = 'inline-block';
     
     renderInstallments();
 }
@@ -344,17 +350,17 @@ function setType(digit) {
     event.target.classList.add('active');
     
     const inputNum = document.getElementById('input-number');
-    const normalAmt = document.getElementById('input-amount');
+    const twoOpts = document.getElementById('two-digit-options');
     const threeOpts = document.getElementById('three-digit-options');
 
     inputNum.placeholder = "0".repeat(digit);
     inputNum.value = '';
 
     if(digit === 3) {
-        normalAmt.style.display = 'none'; // ซ่อนช่องเงินปกติ
-        threeOpts.style.display = 'block'; // โชว์ช่อง ตรง/โต๊ด
+        twoOpts.style.display = 'none';
+        threeOpts.style.display = 'block';
     } else {
-        normalAmt.style.display = 'block';
+        twoOpts.style.display = 'block';
         threeOpts.style.display = 'none';
     }
 }
@@ -371,6 +377,7 @@ function saveEntry() {
     const inst = installments.find(i => i.id === currentInstallmentId);
     
     if(!name || !num) { showAlert("กรุณากรอกชื่อและตัวเลข"); return; }
+    if(num.length !== currentDigitLimit) { showAlert(`กรุณากรอกเลขให้ครบ ${currentDigitLimit} หลัก`); return; }
 
     let entryData = { id: Date.now(), name: name, number: num };
 
@@ -388,18 +395,33 @@ function saveEntry() {
             showAlert("กรุณาระบุจำนวนเงิน ตรง หรือ โต๊ด"); return;
         }
     } else {
-        const amt = parseFloat(document.getElementById('input-amount').value);
-        if (isNaN(amt) || amt <= 0) { showAlert("กรุณาระบุจำนวนเงิน"); return; }
-        entryData.amount = amt;
+        const amtU = parseFloat(document.getElementById('amt-upper').value) || 0;
+        const amtL = parseFloat(document.getElementById('amt-lower').value) || 0;
+        const isU = document.getElementById('check-upper').checked;
+        const isL = document.getElementById('check-lower').checked;
+
+        if ((isU && amtU > 0) || (isL && amtL > 0)) {
+            entryData.amountUpper = isU ? amtU : 0;
+            entryData.amountLower = isL ? amtL : 0;
+            entryData.amount = entryData.amountUpper + entryData.amountLower;
+        } else {
+            showAlert("กรุณาระบุจำนวนเงิน บน หรือ ล่าง"); return;
+        }
     }
 
     inst.entries.unshift(entryData);
     inst.total = inst.entries.reduce((sum, e) => sum + e.amount, 0);
     
-    saveData(); updateUI(); updateNameList();
+    saveData(); 
+    updateUI(); 
+    updateNameList();
+
+    // ล้างค่า (Reset) ยกเว้นชื่อลูกค้า
     document.getElementById('input-number').value = '';
     document.getElementById('amt-straight').value = '';
     document.getElementById('amt-toad').value = '';
+    document.getElementById('amt-upper').value = '';
+    document.getElementById('amt-lower').value = '';
     document.getElementById('input-number').focus();
 }
 
@@ -523,14 +545,27 @@ function showCustomerDetail(name) {
     
     const listDiv = document.getElementById('detail-items');
     listDiv.innerHTML = items.map(e => {
-        let amtText = `${e.amount}.-`;
+        let detailText = ""; // ตัวแปรเก็บข้อความรายละเอียด (บน/ล่าง หรือ ตรง/โต๊ด)
+
+        // กรณีเลข 3 หลัก
         if(e.number.length === 3) {
-            amtText = `<span style="font-size:0.9rem; color:#666;">(ตรง:${e.amountStraight} โต๊ด:${e.amountToad})</span> ${e.amount}.-`;
+            detailText = `<span style="font-size:0.85rem; color:#666;">(ตรง:${e.amountStraight || 0} โต๊ด:${e.amountToad || 0})</span> `;
+        } 
+        // กรณีเลข 2 หลัก (เพิ่มส่วนนี้เข้าไป)
+        else if(e.number.length === 2) {
+            let labels = [];
+            if(e.amountUpper > 0) labels.push(`บน:${e.amountUpper}`);
+            if(e.amountLower > 0) labels.push(`ล่าง:${e.amountLower}`);
+            detailText = `<span style="font-size:0.85rem; color:#666;">(${labels.join(' ')})</span> `;
         }
+
         return `
-            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; font-size:1.1rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 10px; border-bottom:1px solid #eee; font-size:1.1rem;">
                 <span>เลข: <b>${e.number}</b></span>
-                <span>${amtText}</span>
+                <span style="text-align: right;">
+                    ${detailText}
+                    <b>${e.amount.toLocaleString()}.-</b>
+                </span>
             </div>
         `;
     }).join('');
@@ -766,54 +801,45 @@ function isToad(entryNum, winNum) {
 function runAnalysis() {
     const inst = installments.find(i => i.id === currentInstallmentId);
     const content = document.getElementById('report-content');
-    const res3 = document.getElementById('result-3-digit').value; // เลขที่ออก 3 ตัว
-    const res2 = document.getElementById('result-2-digit').value; // เลขที่ออก 2 ตัว
+    const res3 = document.getElementById('result-3-digit').value; 
+    const res2U = document.getElementById('result-2-upper').value; // บน
+    const res2L = document.getElementById('result-2-lower').value; // ล่าง
 
     let totalPayout = 0;
     let winners3 = [];
     let winners2 = [];
 
     inst.entries.forEach(e => {
-        // --- กรณีเลข 2 หลัก (เหมือนเดิม) ---
-        if (e.number.length === 2 && res2 && e.number === res2) {
-            let winAmount = e.amount * 70;
-            winners2.push({ ...e, winAmount, winType: "2 ตัวตรง" });
-            totalPayout += winAmount;
-        } 
-        
-        // --- กรณีเลข 3 หลัก (ปรับปรุงใหม่แยก ตรง/โต๊ด) ---
-        else if (e.number.length === 3 && res3) {
-            
-            // 1. เช็คถูกรางวัล "ตรง"
-            // เงื่อนไข: เลขต้องตรงเป๊ะ และ ต้องมียอดเงินที่แทงในช่อง "ตรง"
-            if (e.number === res3 && e.amountStraight > 0) {
-                let winAmount = e.amountStraight * 500;
-                winners3.push({ 
-                    ...e, 
-                    winAmount, 
-                    winType: "3 ตัวตรง", 
-                    displayAmount: e.amountStraight 
-                });
+        // --- เลข 2 หลัก ---
+        if (e.number.length === 2) {
+            // บน
+            if (res2U && e.number === res2U && e.amountUpper > 0) {
+                let winAmount = e.amountUpper * 70;
+                winners2.push({ ...e, winAmount, winType: "2 ตัวบน", displayAmount: e.amountUpper });
                 totalPayout += winAmount;
             }
-
-            // 2. เช็คถูกรางวัล "โต๊ด"
-            // เงื่อนไข: เลขสลับกันได้ (isToad) และ ต้องมียอดเงินที่แทงในช่อง "โต๊ด"
-            // หมายเหตุ: ถ้าออกตรงเป๊ะ คนที่แทงโต๊ดไว้ก็ได้ตังค์ด้วย (ตามกติกาทั่วไป)
+            // ล่าง
+            if (res2L && e.number === res2L && e.amountLower > 0) {
+                let winAmount = e.amountLower * 70;
+                winners2.push({ ...e, winAmount, winType: "2 ตัวล่าง", displayAmount: e.amountLower });
+                totalPayout += winAmount;
+            }
+        } 
+        // --- เลข 3 หลัก ---
+        else if (e.number.length === 3 && res3) {
+            if (e.number === res3 && e.amountStraight > 0) {
+                let winAmount = e.amountStraight * 500;
+                winners3.push({ ...e, winAmount, winType: "3 ตัวตรง", displayAmount: e.amountStraight });
+                totalPayout += winAmount;
+            }
             if (isToad(e.number, res3) && e.amountToad > 0) {
                 let winAmount = e.amountToad * 150;
-                winners3.push({ 
-                    ...e, 
-                    winAmount, 
-                    winType: "3 ตัวโต๊ด", 
-                    displayAmount: e.amountToad 
-                });
+                winners3.push({ ...e, winAmount, winType: "3 ตัวโต๊ด", displayAmount: e.amountToad });
                 totalPayout += winAmount;
             }
         }
     });
 
-    // --- ส่วนแสดงผล HTML (เหมือนเดิมแต่ปรับยอดเงินที่แทงให้ตรงหมวด) ---
     renderProfitHTML(inst, totalPayout, winners3, winners2, content);
 }
 
