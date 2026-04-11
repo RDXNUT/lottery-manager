@@ -844,7 +844,7 @@ function runAnalysis() {
             // 2. เช็คถูกรางวัล "โต๊ด" 
             // เงื่อนไข: 1.สลับตำแหน่งได้ (isToad) 2.เลขต้อง "ไม่ตรงเป๊ะ" (e.number !== res3) 3.มียอดเงินแทงโต๊ด
             if (isToad(e.number, res3) && e.number !== res3 && e.amountToad > 0) {
-                let winAmount = e.amountToad * 150;
+                let winAmount = e.amountToad * 100;
                 winners3.push({ 
                     ...e, 
                     winAmount, 
