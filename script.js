@@ -35,27 +35,30 @@ function initApp() {
         return;
     }
 
+    const authBtn = document.getElementById('login-nav-btn');
+
     window.fbMethods.onAuthStateChanged(window.fbAuth, async (user) => {
-        const loginBtn = document.getElementById('login-nav-btn');
         const badge = document.querySelector('.demo-badge');
 
         if (user) {
+            // เมื่อล็อกอินสำเร็จ
             currentUser = user;
-            if(loginBtn) loginBtn.innerText = user.displayName.split(' ')[0]; // โชว์แค่ชื่อจริง
-            if(badge) {
-                badge.innerText = "☁️ คลาวด์ซิงค์";
-                badge.style.color = "#2ecc71";
-            }
-            isCloudDataLoaded = false; // รีเซ็ตสถานะก่อนโหลดใหม่
-            await loadDataFromCloud(); 
+            authBtn.innerText = user.displayName.split(' ')[0]; // แสดงชื่อคุณ
+            authBtn.onclick = askLogout; // เปลี่ยนคำสั่งปุ่มให้เป็น "ถามออกจากระบบ"
+            
+            if(badge) { badge.innerText = "☁️ คลาวด์ซิงค์"; badge.style.color = "#2ecc71"; }
+            
+            isCloudDataLoaded = false; 
+            await loadDataFromCloud(); // ดึงข้อมูลจาก Google Account
         } else {
+            // เมื่อไม่ได้ล็อกอิน
             currentUser = null;
-            isCloudDataLoaded = true; 
-            if(loginBtn) loginBtn.innerText = "เข้าสู่ระบบ";
-            if(badge) {
-                badge.innerText = "โหมดทดลองใช้";
-                badge.style.color = "rgba(255,255,255,0.7)";
-            }
+            authBtn.innerText = "เข้าสู่ระบบ";
+            authBtn.onclick = openLoginModal; // เปลี่ยนคำสั่งปุ่มให้เป็น "เปิดหน้าล็อกอิน"
+            
+            if(badge) { badge.innerText = "โหมดทดลองใช้"; badge.style.color = "rgba(255,255,255,0.7)"; }
+            
+            isCloudDataLoaded = true;
             installments = JSON.parse(localStorage.getItem('data_guest')) || [];
             renderInstallments();
         }
@@ -98,26 +101,36 @@ async function loadDataFromCloud() {
     if (!currentUser) return;
     const dbRef = window.fbMethods.ref(window.fbDb);
     try {
-        // ดึงเฉพาะส่วน installments ของ user นั้นๆ
         const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}/installments`));
-        
         if (snapshot.exists()) {
             const data = snapshot.val();
-            // จัดการกรณี Firebase แปลง Array เป็น Object
             installments = Array.isArray(data) ? data : Object.values(data);
-            console.log("✅ ดึงข้อมูลจาก Cloud สำเร็จ!");
+            console.log("✅ ซิงค์ข้อมูลจาก Cloud สำเร็จ");
         } else {
-            // ถ้าใน Cloud ไม่มีเลย ให้เริ่มจากว่างเปล่า (ไม่เอาจาก LocalStorage มาปนเพื่อป้องกันข้อมูลมั่วข้ามเครื่อง)
-            installments = [];
-            console.log("ℹ️ บัญชีใหม่: เริ่มต้นฐานข้อมูลว่าง");
+            installments = []; // บัญชีใหม่
         }
-        
-        isCloudDataLoaded = true; 
-        renderInstallments(); 
-    } catch (error) {
-        console.error("❌ Error loading cloud data:", error);
+        isCloudDataLoaded = true; // อนุญาตให้ระบบเริ่ม "เซฟ" ได้หลังจากโหลดเสร็จ
+        renderInstallments();
+    } catch (e) { console.error("Cloud Error:", e); }
+}
+
+// ฟังก์ชันบันทึกข้อมูล (แก้ปัญหาไม่ซิงค์)
+async function saveData() {
+    if (!currentUser) {
+        localStorage.setItem('data_guest', JSON.stringify(installments));
+        return;
+    }
+
+    // สำคัญ: จะเซฟลง Google ได้ ต้องโหลดของเก่ามาเสร็จก่อน (กันข้อมูลหาย)
+    if (isCloudDataLoaded) {
+        try {
+            const userRef = window.fbMethods.ref(window.fbDb, `users/${currentUser.uid}/installments`);
+            await window.fbMethods.set(userRef, installments);
+            console.log("☁️ บันทึกลง Google Account สำเร็จ");
+        } catch (e) { console.error("Save Error:", e); }
     }
 }
+
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
 async function saveData() {
     if (!currentUser) {
@@ -175,13 +188,9 @@ startApp();
 // --- ฟังก์ชันล็อกอิน Google (ตัวจริง) ---
 async function handleGoogleLogin() {
     try {
-        if (!window.fbMethods) return;
         await window.fbMethods.signInWithPopup(window.fbAuth, window.fbProvider);
         closeLoginModal();
-    } catch (error) {
-        console.error("Login Error:", error);
-        showAlert("เข้าสู่ระบบไม่สำเร็จ หรือคุณปิดหน้าต่างล็อกอิน");
-    }
+    } catch (e) { showAlert("ล็อกอินไม่สำเร็จ"); }
 }
 
 // --- ฟังก์ชันจัดการ Modal (รวมชุดเดียว) ---
