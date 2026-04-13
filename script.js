@@ -35,37 +35,40 @@ function initApp() {
         return;
     }
 
-    const authBtn = document.getElementById('login-nav-btn');
-
     window.fbMethods.onAuthStateChanged(window.fbAuth, async (user) => {
+        // ทุกครั้งที่เปลี่ยนสถานะ (Login/Logout/Switch) ให้ล้างข้อมูลในเครื่องทิ้งทันที
+        installments = []; 
+        isCloudDataLoaded = false; // ปิดสถานะโหลดชั่วคราวเพื่อรอข้อมูลใหม่
+        renderInstallments(); // วาดหน้าจอว่างรอไว้ก่อน
+
+        const loginBtn = document.getElementById('login-nav-btn');
         const badge = document.querySelector('.demo-badge');
 
         if (user) {
-            // เมื่อล็อกอินสำเร็จ
             currentUser = user;
-            authBtn.innerText = user.displayName.split(' ')[0]; // แสดงชื่อคุณ
-            authBtn.onclick = askLogout; // เปลี่ยนคำสั่งปุ่มให้เป็น "ถามออกจากระบบ"
-            
-            if(badge) { badge.innerText = "☁️ คลาวด์ซิงค์"; badge.style.color = "#2ecc71"; }
-            
-            isCloudDataLoaded = false; 
-            await loadDataFromCloud(); // ดึงข้อมูลจาก Google Account
+            loginBtn.innerText = user.displayName || "ผู้ใช้งาน";
+            loginBtn.onclick = () => askLogout(); 
+            badge.innerText = "☁️ คลาวด์ซิงค์";
+            badge.style.color = "#2ecc71";
+
+            await loadDataFromCloud(); // โหลดข้อมูลเฉพาะของบัญชีที่ล็อกอินเข้ามาใหม่
         } else {
-            // เมื่อไม่ได้ล็อกอิน
             currentUser = null;
-            authBtn.innerText = "เข้าสู่ระบบ";
-            authBtn.onclick = openLoginModal; // เปลี่ยนคำสั่งปุ่มให้เป็น "เปิดหน้าล็อกอิน"
+            isCloudDataLoaded = true; 
+            loginBtn.innerText = "เข้าสู่ระบบ";
+            loginBtn.onclick = () => openLoginModal(); 
+
+            badge.innerText = "โหมดทดลองใช้";
+            badge.style.color = "rgba(255,255,255,0.7)";
             
-            if(badge) { badge.innerText = "โหมดทดลองใช้"; badge.style.color = "rgba(255,255,255,0.7)"; }
-            
-            isCloudDataLoaded = true;
+            // ถ้าออกจากระบบแล้ว ให้ลองดูว่ามีข้อมูลโหมดทดลอง (Guest) ไหม
             installments = JSON.parse(localStorage.getItem('data_guest')) || [];
             renderInstallments();
         }
     });
 }
 
-// เรียกทำงาน
+// เรียกใช้งาน
 initApp();
 
 // 1. เปลี่ยนฟังก์ชันถามออกจากระบบเดิม
@@ -101,58 +104,55 @@ async function loadDataFromCloud() {
     if (!currentUser) return;
     const dbRef = window.fbMethods.ref(window.fbDb);
     try {
-        const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}/installments`));
+        const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}`));
         if (snapshot.exists()) {
-            const data = snapshot.val();
-            installments = Array.isArray(data) ? data : Object.values(data);
-            console.log("✅ ซิงค์ข้อมูลจาก Cloud สำเร็จ");
+            const data = snapshot.val().installments;
+            installments = Array.isArray(data) ? data : (data ? Object.values(data) : []);
+            console.log("✅ โหลดข้อมูลจาก Cloud สำเร็จ");
         } else {
-            installments = []; // บัญชีใหม่
+        // กรณีไม่พบข้อมูลใน Cloud
+        console.log("ℹ️ ไม่พบข้อมูลใน Cloud");
+        
+        // ถามตัวเองก่อนว่า: นี่คือการล็อกอินครั้งแรกสุดเพื่อย้ายข้อมูลใช่ไหม?
+        // ถ้าใช่ ให้ใช้ข้อมูลในเครื่องได้ แต่ถ้าไม่ใช่ (เช่นเปิดเครื่องใหม่) ควรเริ่มจาก 0 หรือดึงจาก Cloud เท่านั้น
+        const localData = JSON.parse(localStorage.getItem('data_v1'));
+        
+        if (localData && localData.length > 0) {
+            // แนะนำให้เพิ่มปุ่มยืนยัน หรือเช็คให้ดีก่อนสั่ง saveData ทับ Cloud
+            installments = localData;
+            isCloudDataLoaded = true;
+            await saveData(); 
+        } else {
+            installments = [];
         }
-        isCloudDataLoaded = true; // อนุญาตให้ระบบเริ่ม "เซฟ" ได้หลังจากโหลดเสร็จ
+    }
+        
+        isCloudDataLoaded = true; 
         renderInstallments();
-    } catch (e) { console.error("Cloud Error:", e); }
-}
-
-// ฟังก์ชันบันทึกข้อมูล (แก้ปัญหาไม่ซิงค์)
-async function saveData() {
-    if (!currentUser) {
-        localStorage.setItem('data_guest', JSON.stringify(installments));
-        return;
-    }
-
-    // สำคัญ: จะเซฟลง Google ได้ ต้องโหลดของเก่ามาเสร็จก่อน (กันข้อมูลหาย)
-    if (isCloudDataLoaded) {
-        try {
-            const userRef = window.fbMethods.ref(window.fbDb, `users/${currentUser.uid}/installments`);
-            await window.fbMethods.set(userRef, installments);
-            console.log("☁️ บันทึกลง Google Account สำเร็จ");
-        } catch (e) { console.error("Save Error:", e); }
+    } catch (error) {
+        console.error("❌ Load Error", error);
+        isCloudDataLoaded = true; // ป้องกันแอปค้างเพื่อให้ยังใช้งานต่อได้
     }
 }
-
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
 async function saveData() {
-    if (!currentUser) {
-        // ถ้าไม่ได้ล็อกอิน บันทึกลงเครื่องปกติ
-        localStorage.setItem('data_guest', JSON.stringify(installments));
-        console.log("💾 บันทึกลงเครื่อง (โหมดทดลอง)");
-        return;
-    }
-
-    // ถ้าล็อกอินแล้ว และโหลดข้อมูลตั้งต้นจาก Cloud เสร็จแล้วถึงจะอนุญาตให้เขียนทับ
-    if (isCloudDataLoaded) {
+    if (currentUser) {
+        // 1. ถ้าล็อกอินแล้ว บันทึกลง Firebase Cloud
         try {
-            const userRef = window.fbMethods.ref(window.fbDb, `users/${currentUser.uid}`);
+            const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
             await window.fbMethods.set(userRef, { 
                 installments: installments,
                 lastUpdate: Date.now(),
                 userName: currentUser.displayName
             });
-            console.log("☁️ ซิงค์ข้อมูลขึ้น Cloud สำเร็จ!");
+            console.log("☁️ ข้อมูลซิงค์ขึ้น Cloud เรียบร้อยแล้ว");
         } catch (e) {
-            console.error("❌ Cloud Sync Error:", e);
+            console.error("☁️ Sync Error:", e);
         }
+    } else {
+        // 2. ถ้าไม่ได้ล็อกอิน บันทึกลงเครื่อง (โหมดทดลอง)
+        localStorage.setItem('data_guest', JSON.stringify(installments));
+        console.log("💾 บันทึกลงเครื่องเท่านั้น (ไม่ได้ล็อกอิน)");
     }
 }
 
@@ -188,9 +188,13 @@ startApp();
 // --- ฟังก์ชันล็อกอิน Google (ตัวจริง) ---
 async function handleGoogleLogin() {
     try {
+        if (!window.fbMethods) return;
         await window.fbMethods.signInWithPopup(window.fbAuth, window.fbProvider);
         closeLoginModal();
-    } catch (e) { showAlert("ล็อกอินไม่สำเร็จ"); }
+    } catch (error) {
+        console.error("Login Error:", error);
+        showAlert("เข้าสู่ระบบไม่สำเร็จ หรือคุณปิดหน้าต่างล็อกอิน");
+    }
 }
 
 // --- ฟังก์ชันจัดการ Modal (รวมชุดเดียว) ---
