@@ -40,24 +40,17 @@ function initApp() {
         const badge = document.querySelector('.demo-badge');
 
         if (user) {
-            // เมื่อมีการ Login (ทั้งคอมและมือถือ)
             currentUser = user;
-            if(loginBtn) loginBtn.innerText = user.displayName || "ผู้ใช้งาน";
+            if(loginBtn) loginBtn.innerText = user.displayName.split(' ')[0]; // โชว์แค่ชื่อจริง
             if(badge) {
                 badge.innerText = "☁️ คลาวด์ซิงค์";
                 badge.style.color = "#2ecc71";
             }
-            
-            // สำคัญ: ต้องล้างข้อมูลเก่าในเครื่องก่อน เพื่อรอรับข้อมูลจาก Cloud
-            installments = []; 
-            isCloudDataLoaded = false; 
-
-            console.log("🚀 กำลังดึงข้อมูลให้บัญชี:", user.displayName);
+            isCloudDataLoaded = false; // รีเซ็ตสถานะก่อนโหลดใหม่
             await loadDataFromCloud(); 
         } else {
-            // เมื่อไม่ได้ Login
             currentUser = null;
-            isCloudDataLoaded = true; // ให้เซฟลง LocalStorage ปกติ
+            isCloudDataLoaded = true; 
             if(loginBtn) loginBtn.innerText = "เข้าสู่ระบบ";
             if(badge) {
                 badge.innerText = "โหมดทดลองใช้";
@@ -69,7 +62,7 @@ function initApp() {
     });
 }
 
-// เรียกใช้งานทันที
+// เรียกทำงาน
 initApp();
 
 // 1. เปลี่ยนฟังก์ชันถามออกจากระบบเดิม
@@ -105,50 +98,47 @@ async function loadDataFromCloud() {
     if (!currentUser) return;
     const dbRef = window.fbMethods.ref(window.fbDb);
     try {
-        // ดึงข้อมูลโดยตรงจาก Path users/UID/installments
+        // ดึงเฉพาะส่วน installments ของ user นั้นๆ
         const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}/installments`));
         
         if (snapshot.exists()) {
             const data = snapshot.val();
-            // ตรวจสอบโครงสร้างข้อมูล
+            // จัดการกรณี Firebase แปลง Array เป็น Object
             installments = Array.isArray(data) ? data : Object.values(data);
-            console.log("✅ ดึงข้อมูลสำเร็จ! จำนวน:", installments.length, "งวด");
+            console.log("✅ ดึงข้อมูลจาก Cloud สำเร็จ!");
         } else {
-            console.log("ℹ️ บัญชีนี้ยังไม่มีข้อมูลบน Cloud");
-            // ถ้าใน Cloud ไม่มีเลยจริงๆ ถึงจะไปเอาจาก LocalStorage (เฉพาะครั้งแรก)
-            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
+            // ถ้าใน Cloud ไม่มีเลย ให้เริ่มจากว่างเปล่า (ไม่เอาจาก LocalStorage มาปนเพื่อป้องกันข้อมูลมั่วข้ามเครื่อง)
+            installments = [];
+            console.log("ℹ️ บัญชีใหม่: เริ่มต้นฐานข้อมูลว่าง");
         }
         
-        isCloudDataLoaded = true; // เปิดสวิตช์ให้พร้อมบันทึก
-        renderInstallments(); // วาดหน้าจอทันที
-        
+        isCloudDataLoaded = true; 
+        renderInstallments(); 
     } catch (error) {
-        console.error("❌ เกิดข้อผิดพลาดในการดึงข้อมูล:", error);
-        alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณารีเฟรชหน้าจอ");
+        console.error("❌ Error loading cloud data:", error);
     }
 }
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
 async function saveData() {
-    // ถ้าไม่มี currentUser แสดงว่าไม่ได้ล็อกอิน
     if (!currentUser) {
+        // ถ้าไม่ได้ล็อกอิน บันทึกลงเครื่องปกติ
         localStorage.setItem('data_guest', JSON.stringify(installments));
-        console.log("💾 บันทึกลงเครื่อง (Guest Mode)");
+        console.log("💾 บันทึกลงเครื่อง (โหมดทดลอง)");
         return;
     }
 
-    // ถ้าล็อกอินแล้ว และโหลดข้อมูลตั้งต้นเสร็จแล้ว
+    // ถ้าล็อกอินแล้ว และโหลดข้อมูลตั้งต้นจาก Cloud เสร็จแล้วถึงจะอนุญาตให้เขียนทับ
     if (isCloudDataLoaded) {
         try {
-            const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
+            const userRef = window.fbMethods.ref(window.fbDb, `users/${currentUser.uid}`);
             await window.fbMethods.set(userRef, { 
                 installments: installments,
                 lastUpdate: Date.now(),
                 userName: currentUser.displayName
             });
-            console.log("☁️ ซิงค์ข้อมูลขึ้น Cloud สำเร็จ! (อุปกรณ์อื่นจะเห็นข้อมูลนี้)");
+            console.log("☁️ ซิงค์ข้อมูลขึ้น Cloud สำเร็จ!");
         } catch (e) {
             console.error("❌ Cloud Sync Error:", e);
-            // ถ้า error เพราะ Rules ให้ดูที่หน้า Console ของ Firebase
         }
     }
 }
