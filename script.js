@@ -36,39 +36,40 @@ function initApp() {
     }
 
     window.fbMethods.onAuthStateChanged(window.fbAuth, async (user) => {
-        // ทุกครั้งที่เปลี่ยนสถานะ (Login/Logout/Switch) ให้ล้างข้อมูลในเครื่องทิ้งทันที
-        installments = []; 
-        isCloudDataLoaded = false; // ปิดสถานะโหลดชั่วคราวเพื่อรอข้อมูลใหม่
-        renderInstallments(); // วาดหน้าจอว่างรอไว้ก่อน
-
         const loginBtn = document.getElementById('login-nav-btn');
         const badge = document.querySelector('.demo-badge');
 
         if (user) {
+            // เมื่อมีการ Login (ทั้งคอมและมือถือ)
             currentUser = user;
-            loginBtn.innerText = user.displayName || "ผู้ใช้งาน";
-            loginBtn.onclick = () => askLogout(); 
-            badge.innerText = "☁️ คลาวด์ซิงค์";
-            badge.style.color = "#2ecc71";
-
-            await loadDataFromCloud(); // โหลดข้อมูลเฉพาะของบัญชีที่ล็อกอินเข้ามาใหม่
-        } else {
-            currentUser = null;
-            isCloudDataLoaded = true; 
-            loginBtn.innerText = "เข้าสู่ระบบ";
-            loginBtn.onclick = () => openLoginModal(); 
-
-            badge.innerText = "โหมดทดลองใช้";
-            badge.style.color = "rgba(255,255,255,0.7)";
+            if(loginBtn) loginBtn.innerText = user.displayName || "ผู้ใช้งาน";
+            if(badge) {
+                badge.innerText = "☁️ คลาวด์ซิงค์";
+                badge.style.color = "#2ecc71";
+            }
             
-            // ถ้าออกจากระบบแล้ว ให้ลองดูว่ามีข้อมูลโหมดทดลอง (Guest) ไหม
+            // สำคัญ: ต้องล้างข้อมูลเก่าในเครื่องก่อน เพื่อรอรับข้อมูลจาก Cloud
+            installments = []; 
+            isCloudDataLoaded = false; 
+
+            console.log("🚀 กำลังดึงข้อมูลให้บัญชี:", user.displayName);
+            await loadDataFromCloud(); 
+        } else {
+            // เมื่อไม่ได้ Login
+            currentUser = null;
+            isCloudDataLoaded = true; // ให้เซฟลง LocalStorage ปกติ
+            if(loginBtn) loginBtn.innerText = "เข้าสู่ระบบ";
+            if(badge) {
+                badge.innerText = "โหมดทดลองใช้";
+                badge.style.color = "rgba(255,255,255,0.7)";
+            }
             installments = JSON.parse(localStorage.getItem('data_guest')) || [];
             renderInstallments();
         }
     });
 }
 
-// เรียกใช้งาน
+// เรียกใช้งานทันที
 initApp();
 
 // 1. เปลี่ยนฟังก์ชันถามออกจากระบบเดิม
@@ -104,38 +105,26 @@ async function loadDataFromCloud() {
     if (!currentUser) return;
     const dbRef = window.fbMethods.ref(window.fbDb);
     try {
-        const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}`));
+        // ดึงข้อมูลโดยตรงจาก Path users/UID/installments
+        const snapshot = await window.fbMethods.get(window.fbMethods.child(dbRef, `users/${currentUser.uid}/installments`));
         
-        // แจ้งให้เรารู้ว่าดึงข้อมูลสำเร็จไหม
-        console.log("🔍 กำลังดึงข้อมูลจาก Cloud ของ UID:", currentUser.uid);
-
         if (snapshot.exists()) {
-            const data = snapshot.val().installments;
-            installments = Array.isArray(data) ? data : (data ? Object.values(data) : []);
-            console.log("✅ โหลดข้อมูลสำเร็จ พบงวดเดิม:", installments.length, "งวด");
+            const data = snapshot.val();
+            // ตรวจสอบโครงสร้างข้อมูล
+            installments = Array.isArray(data) ? data : Object.values(data);
+            console.log("✅ ดึงข้อมูลสำเร็จ! จำนวน:", installments.length, "งวด");
         } else {
-            console.log("ℹ️ ไม่พบข้อมูลใน Cloud (บัญชีใหม่)");
-            // ถ้าเป็นบัญชีใหม่ ให้เช็ค LocalStorage เผื่อจะย้ายข้อมูลขึ้น Cloud
-            const localData = JSON.parse(localStorage.getItem('data_v1'));
-            if (localData && localData.length > 0) {
-                installments = localData;
-                console.log("🚚 พบข้อมูลเก่าในเครื่อง กำลังเตรียมย้ายขึ้น Cloud...");
-            } else {
-                installments = [];
-            }
+            console.log("ℹ️ บัญชีนี้ยังไม่มีข้อมูลบน Cloud");
+            // ถ้าใน Cloud ไม่มีเลยจริงๆ ถึงจะไปเอาจาก LocalStorage (เฉพาะครั้งแรก)
+            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
         }
         
-        isCloudDataLoaded = true; // เปิดสวิตช์ให้ saveData ทำงานได้
-        renderInstallments();
+        isCloudDataLoaded = true; // เปิดสวิตช์ให้พร้อมบันทึก
+        renderInstallments(); // วาดหน้าจอทันที
         
-        // ถ้าเป็นการย้ายข้อมูลครั้งแรก ให้สั่งเซฟขึ้นทันที
-        if (!snapshot.exists() && installments.length > 0) {
-            await saveData();
-        }
-
     } catch (error) {
-        console.error("❌ Load Error:", error);
-        isCloudDataLoaded = true; // กันแอปค้าง
+        console.error("❌ เกิดข้อผิดพลาดในการดึงข้อมูล:", error);
+        alert("ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณารีเฟรชหน้าจอ");
     }
 }
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
