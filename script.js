@@ -110,12 +110,21 @@ async function loadDataFromCloud() {
             installments = Array.isArray(data) ? data : (data ? Object.values(data) : []);
             console.log("✅ โหลดข้อมูลจาก Cloud สำเร็จ");
         } else {
-            // ถ้าใน Cloud ว่างเปล่า แต่ในเครื่องมีข้อมูล ให้ใช้ข้อมูลในเครื่องไปก่อน
-            console.log("ℹ️ ไม่พบข้อมูลใน Cloud, ใช้ข้อมูลจาก LocalStorage");
-            installments = JSON.parse(localStorage.getItem('data_v1')) || [];
-            // และสั่งเซฟขึ้น Cloud ทันทีเพื่อให้ข้อมูลเริ่มต้นซิงค์
-            isCloudDataLoaded = true;
-            await saveData();
+            // กรณีไม่พบข้อมูลใน Cloud
+            console.log("ℹ️ ไม่พบข้อมูลใน Cloud");
+            
+            // ถามตัวเองก่อนว่า: นี่คือการล็อกอินครั้งแรกสุดเพื่อย้ายข้อมูลใช่ไหม?
+            // ถ้าใช่ ให้ใช้ข้อมูลในเครื่องได้ แต่ถ้าไม่ใช่ (เช่นเปิดเครื่องใหม่) ควรเริ่มจาก 0 หรือดึงจาก Cloud เท่านั้น
+            const localData = JSON.parse(localStorage.getItem('data_v1'));
+            
+            if (localData && localData.length > 0) {
+                // แนะนำให้เพิ่มปุ่มยืนยัน หรือเช็คให้ดีก่อนสั่ง saveData ทับ Cloud
+                installments = localData;
+                isCloudDataLoaded = true;
+                await saveData(); 
+            } else {
+                installments = [];
+            }
         }
         
         isCloudDataLoaded = true; 
@@ -127,8 +136,8 @@ async function loadDataFromCloud() {
 }
 // --- 3. ฟังก์ชันบันทึกข้อมูล (ปรับปรุงใหม่) ---
 async function saveData() {
-    if (currentUser && isCloudDataLoaded) {
-        // 1. บันทึกลง Cloud (แยกตาม UID ของแต่ละคน)
+    if (currentUser) {
+        // 1. ถ้าล็อกอินแล้ว บันทึกลง Firebase Cloud
         try {
             const userRef = window.fbMethods.ref(window.fbDb, 'users/' + currentUser.uid);
             await window.fbMethods.set(userRef, { 
@@ -136,14 +145,14 @@ async function saveData() {
                 lastUpdate: Date.now(),
                 userName: currentUser.displayName
             });
-            console.log("☁️ ซิงค์ข้อมูลขึ้น Cloud ของบัญชีนี้แล้ว");
+            console.log("☁️ ข้อมูลซิงค์ขึ้น Cloud เรียบร้อยแล้ว");
         } catch (e) {
             console.error("☁️ Sync Error:", e);
         }
     } else {
-        // 2. ถ้าไม่ได้ล็อกอิน ให้เซฟลง LocalStorage ในชื่อ "data_guest"
+        // 2. ถ้าไม่ได้ล็อกอิน บันทึกลงเครื่อง (โหมดทดลอง)
         localStorage.setItem('data_guest', JSON.stringify(installments));
-        console.log("💾 บันทึกลงเครื่อง (โหมดทดลอง)");
+        console.log("💾 บันทึกลงเครื่องเท่านั้น (ไม่ได้ล็อกอิน)");
     }
 }
 
