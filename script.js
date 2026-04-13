@@ -1,3 +1,4 @@
+let personFilter = 'all';
 let editingInstallmentId = null; // เก็บ ID เมื่อมีการแก้ไข
 
 // ฟังก์ชันแปลงวันที่ 2024-04-16 เป็น "16 เมษายน 2567"
@@ -711,38 +712,96 @@ function renderReport() {
     const inst = installments.find(i => i.id === currentInstallmentId);
     const content = document.getElementById('report-content');
     const analysisControls = document.getElementById('profit-analysis-controls');
+    const personSubTabs = document.getElementById('person-sub-tabs');
+    const searchWrap = document.getElementById('search-box-wrap');
+    
     content.innerHTML = '';
-
-    // แสดง/ซ่อน ช่องกรอกเลขรางวัล
     analysisControls.style.display = (currentTab === 'profit') ? 'block' : 'none';
+    searchWrap.style.display = (currentTab === 'number') ? 'block' : 'none';
+    personSubTabs.style.display = (currentTab === 'person') ? 'flex' : 'none';
+
+    // ดึงเลขที่ออก (ถ้ามี)
+    const res3 = document.getElementById('result-3-digit').value;
+    const res2U = document.getElementById('result-2-upper').value;
+    const res2L = document.getElementById('result-2-lower').value;
 
     if (currentTab === 'person') {
-        const perPerson = inst.entries.reduce((acc, e) => {
-            acc[e.name] = (acc[e.name] || 0) + e.amount;
-            return acc;
-        }, {});
+    // 1. เช็คก่อนว่ากรอกเลขรางวัลหรือยัง
+    const hasResults = res3 || res2U || res2L;
 
-        Object.keys(perPerson).forEach(name => {
-            const isPaid = inst.paidList && inst.paidList[name];
-            const card = document.createElement('div');
-            card.className = 'report-card';
-            card.innerHTML = `
-                <div class="person-row" style="font-size:1.3rem;">
-                    <span><b>${name}</b></span>
-                    <span style="color:var(--green)"><b>${perPerson[name].toLocaleString()}.-</b></span>
-                </div>
-                <button onclick="togglePaymentStatus('${name}')" 
-                        class="btn-toggle-pay ${isPaid ? 'btn-status-paid' : 'btn-status-unpaid'}">
-                    ${isPaid ? 'จ่ายเงินแล้ว' : 'จ่ายเงิน'}
+    // 2. ถ้าเลือกเมนู ถูก/ไม่ถูกรางวัล แต่ยังไม่ได้กรอกเลขรางวัล ให้ขึ้นคำเตือน
+    if (personFilter !== 'all' && !hasResults) {
+        content.innerHTML = `
+            <div style="text-align:center; padding:40px 20px; background:white; border-radius:15px; border:2px dashed #ccc; color:#666;">
+                <div style="font-size:3rem; margin-bottom:15px;">📝</div>
+                <h3>ยังไม่ได้กรอกเลขรางวัล</h3>
+                <p>กรุณาไปที่เมนู <b>"วิเคราะห์กำไร"</b> เพื่อกรอกเลขที่ออกก่อน <br>ระบบจึงจะสามารถแยกรายชื่อผู้ถูกรางวัลให้ได้ครับ</p>
+                <button onclick="switchTab('profit')" class="btn-save" style="width:auto; padding:10px 25px; font-size:1rem; margin-top:10px;">ไปกรอกเลขรางวัล</button>
+            </div>
+        `;
+        return; // หยุดการทำงาน ไม่ต้องวาดรายชื่อ
+    }
+
+    // --- 3. ส่วนการประมวลผลรายชื่อ (โค้ดเดิมที่ปรับปรุงแล้ว) ---
+    const personData = inst.entries.reduce((acc, e) => {
+        if (!acc[e.name]) acc[e.name] = { entries: [], totalBet: 0, totalWin: 0 };
+        acc[e.name].entries.push(e);
+        acc[e.name].totalBet += e.amount;
+        
+        let win = 0;
+        if (e.number.length === 2) {
+            if (res2U && e.number === res2U) win += (e.amountUpper || 0) * 70;
+            if (res2L && e.number === res2L) win += (e.amountLower || 0) * 70;
+        } else if (e.number.length === 3 && res3) {
+            if (e.number === res3) win += (e.amountStraight || 0) * 500;
+            if (isToad(e.number, res3) && e.number !== res3) win += (e.amountToad || 0) * 100;
+        }
+        acc[e.name].totalWin += win;
+        return acc;
+    }, {});
+
+    Object.keys(personData).forEach(name => {
+        const data = personData[name];
+        const isWinner = data.totalWin > 0;
+
+        if (personFilter === 'winner' && !isWinner) return;
+        if (personFilter === 'loser' && isWinner) return;
+
+        const isPaid = inst.paidList && inst.paidList[name];
+        const card = document.createElement('div');
+        card.className = 'report-card';
+        if (isWinner) card.style.borderLeft = "8px solid #f1c40f";
+
+        card.innerHTML = `
+            <div class="person-row">
+                <span style="font-size:1.4rem;"><b>${name}</b> ${isWinner ? '⭐' : ''}</span>
+                <button onclick="togglePaymentStatus('${name}')" class="btn-toggle-pay ${isPaid ? 'btn-status-paid' : 'btn-status-unpaid'}" style="width:auto; padding:5px 15px; margin:0;">
+                    ${isPaid ? 'จ่ายแล้ว' : 'ยังไม่จ่าย'}
                 </button>
-            `;
-            content.appendChild(card);
-        });
+            </div>
+            
+            <div style="background:#f9f9f9; padding:10px; border-radius:10px; margin:10px 0;">
+                ${data.entries.map(e => {
+                    let detail = e.number.length === 3 
+                        ? `(ตรง:${e.amountStraight} โต๊ด:${e.amountToad})` 
+                        : `(บน:${e.amountUpper} ล่าง:${e.amountLower})`;
+                    return `<div style="font-size:0.85rem; color:#555;">เลข ${e.number} ${detail} = <b>${e.amount}.-</b></div>`;
+                }).join('')}
+            </div>
+
+            <div class="person-row" style="border-top:1px dashed #ccc; padding-top:10px;">
+                <span>ยอดแทงรวม: <b>${data.totalBet.toLocaleString()}.-</b></span>
+                <span style="${isWinner ? 'color:#27ae60; font-weight:bold;' : 'color:#999;'}">
+                    ${isWinner ? `ถูกรางวัล: ${data.totalWin.toLocaleString()}.-` : 'ไม่ถูกรางวัล'}
+                </span>
+            </div>
+        `;
+        content.appendChild(card);
+    });
 
     } else if (currentTab === 'profit') {
-        runAnalysis(); // เรียกใช้ฟังก์ชันคำนวณกำไร
+        runAnalysis();
     } else {
-        // ส่วน 'number' (แยกตามเลข) คงเดิมจากโค้ดเก่า
         renderNumberGroupedReport(inst, content);
     }
 }
@@ -1035,4 +1094,22 @@ window.onclick = function(event) {
     if (event.target == addModal) closeAddModal();
     if (event.target == deleteModal) closeDeleteModal();
     if (event.target == alertModal) closeAlert();
+}
+
+function setPersonFilter(filter) {
+    personFilter = filter;
+    
+    // ค้นหาปุ่มทั้งหมดใน Sub-tab
+    const buttons = document.querySelectorAll('#person-sub-tabs .tab-btn');
+    
+    buttons.forEach(btn => {
+        btn.classList.remove('active'); // เอาสีขาวออกก่อนทุกปุ่ม
+        
+        // เช็คเงื่อนไขเพื่อใส่สีขาวให้ปุ่มที่ถูกเลือก
+        if (filter === 'all' && btn.innerText === 'ทั้งหมด') btn.classList.add('active');
+        if (filter === 'winner' && btn.innerText === 'ถูกรางวัล') btn.classList.add('active');
+        if (filter === 'loser' && btn.innerText === 'ไม่ถูกรางวัล') btn.classList.add('active');
+    });
+    
+    renderReport(); // วาดหน้าจอใหม่
 }

@@ -169,6 +169,13 @@
                 <button class="tab-btn" onclick="switchTab('profit')">วิเคราะห์กำไร</button>
             </div>
 
+            <!-- เพิ่มส่วนนี้: Sub-tab สำหรับหน้ายอดเก็บเงิน (จะแสดงเฉพาะเมื่อเลือก tab person) -->
+            <div id="person-sub-tabs" class="tab-container" style="display: none; background: #eee; margin-top: -10px; transform: scale(0.9);">
+                <button class="tab-btn active" onclick="setPersonFilter('all')">ทั้งหมด</button>
+                <button class="tab-btn" onclick="setPersonFilter('winner')">ถูกรางวัล</button>
+                <button class="tab-btn" onclick="setPersonFilter('loser')">ไม่ถูกรางวัล</button>
+            </div>
+
             <!-- ช่องค้นหาเลข -->
             <div class="search-container" id="search-box-wrap">
                 <input type="number" id="search-number" placeholder="🔍 ค้นหาตัวเลข..." oninput="filterReport()">
