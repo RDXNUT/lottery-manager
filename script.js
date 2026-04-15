@@ -955,6 +955,7 @@ function renderNumberGroupedReport(inst, content) {
         const types = grouped[num];
         const card = document.createElement('div');
         card.className = 'report-card';
+        card.style.height = "fit-content"; 
         
         let typesHtml = '';
         for (const [typeName, data] of Object.entries(types)) {

@@ -573,6 +573,9 @@ input:focus { border-color: var(--light-blue); outline: none; }
 @media (max-width: 480px) {
     #view-title { font-size: 1.1rem !important; }
     .header-container { padding: 5px 10px; }
+    .header-container h1 {
+        font-size: 1.1rem !important;
+    }
     .header-action-group { gap: 5px; }
     
     .btn-header-list { 
@@ -593,7 +596,7 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .grid-container { grid-template-columns: 1fr; } /* โชว์การ์ดงวด 1 คอลัมน์ */
     
     .modern-modal { width: 95%; }
-    .big-input { font-size: 2rem !important; }
+    .big-input { font-size: 1.8rem !important; }
     
     .action-bar-top { flex-direction: row; gap: 8px; }
     .pill-btn { font-size: 0.8rem; padding: 10px; }
@@ -602,8 +605,10 @@ input:focus { border-color: var(--light-blue); outline: none; }
     .person-row { font-size: 0.95rem; }
 }
 @media (min-width: 481px) and (max-width: 1024px) {
-    .container { width: 92%; }
-    .grid-container { grid-template-columns: 1fr 1fr; } /* โชว์การ์ดงวด 2 คอลัมน์ */
+    .container { width: 95%; }
+    .grid-container {
+        grid-template-columns: repeat(2, 1fr); /* งวดโชว์ 2 คอลัมน์ */
+    }
     #view-title { font-size: 1.3rem; }
     .btn-header-list { min-width: 90px !important; }
     .modern-modal { max-width: 450px; }
