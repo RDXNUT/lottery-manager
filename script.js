@@ -919,70 +919,76 @@ function renderNumberGroupedReport(inst, content) {
     const searchTerm = document.getElementById('search-number').value;
     content.innerHTML = ''; 
 
+    // 1. จัดโครงสร้างข้อมูลใหม่: [เลข][ประเภท] = { รายชื่อ, ยอดรวมประเภท }
     const grouped = inst.entries.reduce((acc, e) => {
         if (searchTerm && !e.number.includes(searchTerm)) return acc;
-        if (!acc[e.number]) acc[e.number] = { items: [], total: 0 };
-        acc[e.number].items.push(e);
-        acc[e.number].total += e.amount;
+        
+        if (!acc[e.number]) acc[e.number] = {};
+
+        // ฟังก์ชันช่วยในการเพิ่มข้อมูลลงกลุ่มย่อย
+        const addSubGroup = (type, amt) => {
+            if (amt <= 0) return;
+            if (!acc[e.number][type]) acc[e.number][type] = { items: [], subTotal: 0 };
+            acc[e.number][type].items.push({ name: e.name, amount: amt });
+            acc[e.number][type].subTotal += amt;
+        };
+
+        if (e.number.length === 2) {
+            addSubGroup('บน', e.amountUpper || 0);
+            addSubGroup('ล่าง', e.amountLower || 0);
+        } else {
+            addSubGroup('ตรง', e.amountStraight || 0);
+            addSubGroup('โต๊ด', e.amountToad || 0);
+        }
         return acc;
     }, {});
 
-    const allKeys = Object.keys(grouped);
-    const group2 = allKeys.filter(k => k.length === 2).sort((a, b) => a.localeCompare(b));
-    const group3 = allKeys.filter(k => k.length === 3).sort((a, b) => a.localeCompare(b));
+    const sortedNums = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
 
-    if (group2.length === 0 && group3.length === 0) {
-        content.innerHTML = `<div style="text-align:center; padding:20px; color:#999;">ไม่พบข้อมูลเลขที่ค้นหา</div>`;
+    if (sortedNums.length === 0) {
+        content.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">ไม่พบข้อมูลตัวเลข</div>`;
         return;
     }
 
-    const drawCards = (keys, title) => {
-        if (keys.length > 0) {
-            const header = document.createElement('h3');
-            header.style = "margin: 20px 0 10px 5px; color: var(--navy); border-bottom: 2px solid #eee; padding-bottom: 5px;";
-            header.innerText = title;
-            content.appendChild(header);
-
-            keys.forEach(num => {
-                const data = grouped[num];
-                const card = document.createElement('div');
-                card.className = 'report-card';
-                card.innerHTML = `
-                    <div class="num-header">
-                        <span class="num-title" style="font-size: 1.4rem;">เลข ${num}</span>
-                        <b style="color:var(--navy); font-size:1.2rem;">รวม: ${data.total.toLocaleString()}.-</b>
+    // 2. วาดการ์ดแสดงผล
+    sortedNums.forEach(num => {
+        const types = grouped[num];
+        const card = document.createElement('div');
+        card.className = 'report-card';
+        
+        let typesHtml = '';
+        for (const [typeName, data] of Object.entries(types)) {
+            const badgeClass = (typeName === 'บน' || typeName === 'ตรง') ? 'badge-upper' : 'badge-lower';
+            
+            typesHtml += `
+                <div class="num-group-box">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-left:4px solid ${typeName==='บน'||typeName==='ตรง'?'#3498db':'#e74c3c'}; padding-left:10px;">
+                        <span class="type-badge ${badgeClass}">${typeName}</span>
+                        <b style="color:var(--navy)">รวม ${typeName}: ${data.subTotal.toLocaleString()}.-</b>
                     </div>
-                    ${data.items.map(e => {
-                        // --- ส่วนที่แก้ไข: เพิ่มการคำนวณข้อความรายละเอียด (Detail Line) ---
-                        let detailLine = '';
-                        if (e.number.length === 3) {
-                            detailLine = `<br><small style="color:#888;">(ตรง:${e.amountStraight || 0} โต๊ด:${e.amountToad || 0})</small>`;
-                        } else if (e.number.length === 2) {
-                            let labels = [];
-                            if(e.amountUpper > 0) labels.push(`บน:${e.amountUpper}`);
-                            if(e.amountLower > 0) labels.push(`ล่าง:${e.amountLower}`);
-                            detailLine = `<br><small style="color:#888;">(${labels.join(' ')})</small>`;
-                        }
-
-                        return `
-                            <div class="person-row">
-                                <span style="font-size: 1rem;">
-                                    <b>${e.name}</b> 
-                                    ${detailLine}
-                                </span> 
-                                <span style="font-weight: 600;">${e.amount.toLocaleString()}.-</span>
-                            </div>
-                        `;
-                    }).join('')}
-                `;
-                content.appendChild(card);
-            });
+                    ${data.items.map(item => `
+                        <div class="person-row" style="padding-left:15px; font-size:0.95rem;">
+                            <span>${item.name}</span>
+                            <span style="color:#555;">${item.amount.toLocaleString()}.-</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
-    };
+
+        card.innerHTML = `
+            <div class="num-header" style="background:#f8f9fa; margin:-15px -15px 15px -15px; padding:12px 15px; border-radius:15px 15px 0 0;">
+                <span class="num-title" style="color:var(--dark-blue)">เลข ${num}</span>
+            </div>
+            ${typesHtml}
+        `;
+        content.appendChild(card);
+    });
+}
+    
 
     drawCards(group2, "📊 หมวดเลข 2 หลัก (00-99)");
     drawCards(group3, "📊 หมวดเลข 3 หลัก (000-999)");
-}
 
 function closeLoginModal() {
     document.getElementById('login-modal').style.display = 'none';

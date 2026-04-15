@@ -538,8 +538,21 @@ input:focus { border-color: var(--light-blue); outline: none; }
 }
 .btn-status-unpaid { background-color: #2ecc71; color: white; } /* สีเขียว - จ่ายเงิน */
 .btn-status-paid { background-color: #e0e0e0; color: #7f8c8d; }   /* สีเทา - จ่ายเงินแล้ว */
-
-
+.type-badge {
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-right: 5px;
+    color: white;
+}
+.badge-upper { background-color: #3498db; }  /* สีน้ำเงิน บน/ตรง */
+.badge-lower { background-color: #e74c3c; }  /* สีแดง ล่าง/โต๊ด */
+.num-group-box {
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+.num-group-box:last-child { border-bottom: none; }
 /* --- 11. RESPONSIVE DESIGN --- */
 
 /* มือถือขนาดเล็ก */
@@ -584,6 +597,9 @@ input:focus { border-color: var(--light-blue); outline: none; }
     
     .action-bar-top { flex-direction: row; gap: 8px; }
     .pill-btn { font-size: 0.8rem; padding: 10px; }
+    .num-header { flex-direction: column; align-items: flex-start; gap: 5px; }
+    .subtotal-text { font-size: 1rem; }
+    .person-row { font-size: 0.95rem; }
 }
 @media (min-width: 481px) and (max-width: 1024px) {
     .container { width: 92%; }
